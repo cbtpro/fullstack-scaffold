@@ -9,7 +9,6 @@ import com.scaffold.auth.model.LoginRequest;
 import com.scaffold.auth.model.LoginUser;
 import com.scaffold.common.api.ResultCode;
 import com.scaffold.common.exception.BizException;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -95,15 +94,19 @@ public class SaTokenAuthManager implements AuthManager {
     }
 
     @Override
-    public String parseToken(HttpServletRequest req) {
-        String header = req.getHeader(props.getTokenHeader());
-        if (header == null || header.isEmpty()) {
+    public String getTokenHeaderName() {
+        return props.getTokenHeader();
+    }
+
+    @Override
+    public String parseToken(String authHeader) {
+        if (authHeader == null || authHeader.isEmpty()) {
             return null;
         }
         String prefix = props.getTokenPrefix();
-        if (prefix != null && !prefix.isEmpty() && header.startsWith(prefix)) {
-            return header.substring(prefix.length()).trim();
+        if (prefix != null && !prefix.isEmpty() && authHeader.startsWith(prefix)) {
+            return authHeader.substring(prefix.length()).trim();
         }
-        return header.trim();
+        return authHeader.trim();
     }
 }

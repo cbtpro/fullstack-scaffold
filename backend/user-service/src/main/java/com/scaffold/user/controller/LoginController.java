@@ -36,7 +36,8 @@ public class LoginController {
     @PostMapping("/logout")
     @Operation(summary = "退出登录")
     public Result<Void> logout(HttpServletRequest request) {
-        String token = authManager.parseToken(request);
+        String header = request.getHeader(authManager.getTokenHeaderName());
+        String token = authManager.parseToken(header);
         if (token != null) {
             authManager.logout(token);
         }

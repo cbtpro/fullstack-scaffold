@@ -45,13 +45,14 @@ public class AuthAutoConfiguration {
 
     /**
      * JWT 鉴权实现。gateway（WebFlux）也能装配，用于 reactive 过滤器校验 token。
+     * 返回具体类型 {@link JwtAuthManager}，供 {@link JwtSecurityConfig#jwtAuthFilter} 按具体类型注入。
      */
     @Bean
     @ConditionalOnProperty(prefix = "auth", name = "type", havingValue = "JWT", matchIfMissing = true)
     @ConditionalOnClass(BCryptPasswordEncoder.class)
-    public AuthManager jwtAuthManager(AuthProperties props,
-                                      ObjectProvider<AuthUserLoader> loaderProvider,
-                                      PasswordEncoder encoder) {
+    public JwtAuthManager jwtAuthManager(AuthProperties props,
+                                         ObjectProvider<AuthUserLoader> loaderProvider,
+                                         PasswordEncoder encoder) {
         return new JwtAuthManager(props, loaderProvider, encoder);
     }
 
@@ -61,9 +62,9 @@ public class AuthAutoConfiguration {
     @Bean
     @ConditionalOnProperty(prefix = "auth", name = "type", havingValue = "SA_TOKEN")
     @ConditionalOnClass(StpUtil.class)
-    public AuthManager saTokenAuthManager(AuthProperties props,
-                                          ObjectProvider<AuthUserLoader> loaderProvider,
-                                          PasswordEncoder encoder) {
+    public SaTokenAuthManager saTokenAuthManager(AuthProperties props,
+                                                 ObjectProvider<AuthUserLoader> loaderProvider,
+                                                 PasswordEncoder encoder) {
         return new SaTokenAuthManager(props, loaderProvider, encoder);
     }
 }

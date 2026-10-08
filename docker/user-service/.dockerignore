@@ -1,0 +1,24 @@
+# 与 Dockerfile 同目录的 .dockerignore，规则相对 build context（仓库根）
+# 排除构建产物、依赖目录、IDE/OS 噪声，保持镜像构建上下文最小
+
+**/target/
+**/*.class
+**/*.jar
+!backend/*/pom.xml
+
+frontend/node_modules/
+frontend/.nitro/
+frontend/.output/
+frontend/dist/
+frontend/.turbo/
+
+backend/*/.mvn/
+backend/*/HELP.md
+backend/*/.flattened-pom.xml
+
+.git/
+.idea/
+.vscode/
+**/.DS_Store
+**/._*
+*.log

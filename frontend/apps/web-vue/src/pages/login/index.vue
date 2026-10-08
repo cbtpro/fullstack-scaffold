@@ -54,7 +54,7 @@ const form = reactive<LoginRequest>({ username: 'admin', password: '123456' });
 async function onFinish() {
   submitting.value = true;
   try {
-    const { token, user } = await fs.post<LoginResult>('/login', { ...form });
+    const { token, user } = await fs.post<LoginResult>('/auth/login', { ...form });
     setToken(token);
     auth.set({ token, user: (user as User) ?? null });
     void message.success(t('login.success'));

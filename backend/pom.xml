@@ -156,6 +156,14 @@
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-maven-plugin</artifactId>
                     <version>${spring-boot.version}</version>
+                    <executions>
+                        <!-- 非 spring-boot-starter-parent，需显式绑定 repackage 到 package 阶段
+                             否则打出的 jar 无 Main-Class，无法 java -jar 运行 -->
+                        <execution>
+                            <id>repackage</id>
+                            <goals><goal>repackage</goal></goals>
+                        </execution>
+                    </executions>
                 </plugin>
             </plugins>
         </pluginManagement>

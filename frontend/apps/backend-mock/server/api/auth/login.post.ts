@@ -1,10 +1,11 @@
 import { createError, defineEventHandler, readBody } from 'h3';
 import type { ApiResponse, LoginRequest, LoginResult, User } from '@fs/types';
-import { signToken } from '../utils/jwt';
+import { signToken } from '../../utils/jwt';
 
 /**
- * POST /api/login
+ * POST /api/auth/login
  * 校验 admin/123456 后签发 token。仅作示例，禁止用于生产。
+ * 路径与后端 user-service 的 LoginController 对齐，便于前端在 mock 与真实后端间切换。
  */
 const MOCK_USERS: Record<string, { password: string; user: User }> = {
   admin: {

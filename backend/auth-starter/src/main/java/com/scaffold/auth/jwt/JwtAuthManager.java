@@ -10,7 +10,6 @@ import com.scaffold.common.exception.BizException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -122,15 +121,19 @@ public class JwtAuthManager implements AuthManager {
     }
 
     @Override
-    public String parseToken(HttpServletRequest req) {
-        String header = req.getHeader(props.getTokenHeader());
-        if (header == null || header.isEmpty()) {
+    public String getTokenHeaderName() {
+        return props.getTokenHeader();
+    }
+
+    @Override
+    public String parseToken(String authHeader) {
+        if (authHeader == null || authHeader.isEmpty()) {
             return null;
         }
         String prefix = props.getTokenPrefix();
-        if (prefix != null && !prefix.isEmpty() && header.startsWith(prefix)) {
-            return header.substring(prefix.length()).trim();
+        if (prefix != null && !prefix.isEmpty() && authHeader.startsWith(prefix)) {
+            return authHeader.substring(prefix.length()).trim();
         }
-        return header.trim();
+        return authHeader.trim();
     }
 }

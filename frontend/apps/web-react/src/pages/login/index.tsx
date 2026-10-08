@@ -16,7 +16,7 @@ export default function LoginPage() {
   const onFinish = async (values: LoginRequest) => {
     setSubmitting(true);
     try {
-      const { token, user } = await fs.post<LoginResult>('/login', values);
+      const { token, user } = await fs.post<LoginResult>('/auth/login', values);
       setToken(token);
       setAuth({ token, user: (user as User) ?? null });
       void message.success(t('login.success'));

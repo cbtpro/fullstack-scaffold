@@ -43,11 +43,11 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Spring Security：JWT 模式用 SecurityFilterChain，optional 不强加给 sa-token 分支 -->
+        <!-- Spring Security：JwtSecurityConfig 直接引用 SecurityFilterChain 等 API，
+             为 JWT 模式核心依赖，必须传递给业务方；gateway(WebFlux) 在自身 pom 显式 exclude -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
-            <optional>true</optional>
         </dependency>
 
         <!-- Sa-Token：optional，仅 auth.type=SA_TOKEN 时由业务方引入激活 -->

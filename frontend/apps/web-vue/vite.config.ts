@@ -3,7 +3,7 @@ import vue from '@vitejs/plugin-vue';
 import { fileURLToPath, URL } from 'node:url';
 
 /**
- * Vite 配置。`@` 别名指向 src，`/api` 代理到 backend-mock（5180）。
+ * Vite 配置。`@` 别名指向 src，`/api` 默认代理到 gateway（8080）；仅前端联调时切到 backend-mock（5180）。
  */
 export default defineConfig({
   plugins: [vue()],
@@ -17,7 +17,7 @@ export default defineConfig({
     port: 5174,
     proxy: {
       '/api': {
-        target: 'http://localhost:5180',
+        target: 'http://localhost:8080',
         changeOrigin: true,
       },
     },

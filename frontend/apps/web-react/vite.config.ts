@@ -5,7 +5,7 @@ import { fileURLToPath, URL } from 'node:url';
 /**
  * Vite 配置。
  * - `@` 别名指向 src，方便本地引用
- * - `/api` 代理到 backend-mock（5180）。阶段 6 切换到 gateway（8080）即可
+ * - `/api` 默认代理到 gateway（8080）；仅前端联调时切到 backend-mock（5180）
  */
 export default defineConfig({
   plugins: [react()],
@@ -19,7 +19,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:5180',
+        target: 'http://localhost:8080',
         changeOrigin: true,
       },
     },

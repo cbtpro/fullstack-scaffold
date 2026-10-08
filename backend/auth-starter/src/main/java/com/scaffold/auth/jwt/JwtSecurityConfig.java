@@ -30,6 +30,7 @@ public class JwtSecurityConfig {
      */
     private static final String[] PERMIT_PATHS = {
             "/api/auth/login",
+            "/actuator/**",
             "/doc.html",
             "/swagger-ui/**",
             "/swagger-ui.html",

@@ -36,7 +36,8 @@ public class UserController {
     @GetMapping("/info")
     @Operation(summary = "当前登录用户信息", description = "按请求头 token 解析")
     public Result<LoginUser> info(HttpServletRequest request) {
-        String token = authManager.parseToken(request);
+        String header = request.getHeader(authManager.getTokenHeaderName());
+        String token = authManager.parseToken(header);
         if (token == null) {
             return Result.fail(com.scaffold.common.api.ResultCode.UNAUTHORIZED);
         }
