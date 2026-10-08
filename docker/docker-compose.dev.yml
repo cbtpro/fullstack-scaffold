@@ -47,6 +47,7 @@ services:
   nacos:
     image: nacos/nacos-server:v2.3.2
     container_name: fs-nacos
+    platform: linux/amd64
     restart: unless-stopped
     ports:
       - "8848:8848"
