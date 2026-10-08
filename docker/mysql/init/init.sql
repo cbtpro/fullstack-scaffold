@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS `user` (
     UNIQUE KEY `uk_username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户表';
 
--- 插入示例数据（密码 = BCrypt("123456")）
+-- 插入示例数据（密码 = BCrypt("123456")，可用 BCryptPasswordEncoder.matches 验证）
 INSERT INTO `user` (`username`, `password`, `nickname`, `email`, `status`)
-VALUES ('admin', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '管理员', 'admin@fullstack-scaffold.local', 1),
-       ('guest', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '访客', 'guest@fullstack-scaffold.local', 1);
+VALUES ('admin', '$2a$10$kFQj2cTQ4Cx8PgguNyqcfO3zfFQuEzf5im9Jov4XgGfU0RAT0X1wq', '管理员', 'admin@fullstack-scaffold.local', 1),
+       ('guest', '$2a$10$kFQj2cTQ4Cx8PgguNyqcfO3zfFQuEzf5im9Jov4XgGfU0RAT0X1wq', '访客', 'guest@fullstack-scaffold.local', 1);
