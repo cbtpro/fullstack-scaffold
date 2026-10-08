@@ -1,0 +1,84 @@
+# fullstack-scaffold 本地开发档：仅中间件（MySQL + Redis + Nacos）
+# 用法：docker compose -f docker/docker-compose.dev.yml up -d
+
+name: fullstack-scaffold-dev
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: fs-mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: fs_user
+      TZ: Asia/Shanghai
+    volumes:
+      - ./mysql/conf/my.cnf:/etc/mysql/conf.d/my.cnf:ro
+      - ./mysql/init:/docker-entrypoint-initdb.d:ro
+      - fs-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-uroot", "-proot123"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - fs-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: fs-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis/redis.conf:/etc/redis/redis.conf:ro
+      - fs-redis-data:/data
+    command: ["redis-server", "/etc/redis/redis.conf"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - fs-net
+
+  nacos:
+    image: nacos/nacos-server:v2.3.2
+    container_name: fs-nacos
+    restart: unless-stopped
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+      - "9849:9849"
+    environment:
+      MODE: standalone
+      PREFER_HOST_MODE: hostname
+      NACOS_AUTH_ENABLE: "false"
+      JVM_XMS: 512m
+      JVM_XMX: 512m
+      JVM_XMN: 256m
+      TZ: Asia/Shanghai
+    volumes:
+      - ./nacos/conf/application.properties:/home/nacos/conf/application.properties:ro
+      - fs-nacos-data:/home/nacos/data
+      - fs-nacos-logs:/home/nacos/logs
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:8848/nacos/v1/console/health/readiness || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    networks:
+      - fs-net
+
+volumes:
+  fs-mysql-data:
+  fs-redis-data:
+  fs-nacos-data:
+  fs-nacos-logs:
+
+networks:
+  fs-net:
+    driver: bridge

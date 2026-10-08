@@ -1,0 +1,44 @@
+# Node / pnpm
+node_modules/
+dist/
+.turbo/
+.cache/
+*.log
+.npmrc.local
+.pnpm-debug.log*
+
+# Java / Maven
+target/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+*.iml
+HELP.md
+.mvn/
+!.mvn/wrapper/
+.flattened-pom.xml
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+.factorypath
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env / secrets
+.env
+.env.local
+*.pem
+*.key
+
+# Build outputs
+coverage/
+*.tsbuildinfo
