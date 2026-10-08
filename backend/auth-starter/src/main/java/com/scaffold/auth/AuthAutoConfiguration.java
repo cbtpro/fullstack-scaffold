@@ -4,8 +4,8 @@ import com.scaffold.auth.jwt.JwtAuthManager;
 import com.scaffold.auth.jwt.JwtSecurityConfig;
 import com.scaffold.auth.satoken.SaTokenAuthManager;
 import cn.dev33.satoken.stp.StpUtil;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -25,7 +25,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
  *   <li>{@code auth.type=SA_TOKEN}：装配 {@link SaTokenAuthManager}，业务侧 Application 需排除
  *       {@code SecurityAutoConfiguration} 以避免与 sa-token 拦截器冲突</li>
  * </ul>
- * 两种模式均要求业务方提供 {@link AuthUserLoader} Bean。
+ * {@link AuthUserLoader} 经 {@link ObjectProvider} 延迟注入：业务侧（user-service）提供 loader 支持 login，
+ * gateway 不调 login 无需 loader 也能装配 {@code AuthManager} 用于校验。
  */
 @AutoConfiguration
 @EnableConfigurationProperties(AuthProperties.class)
@@ -43,16 +44,15 @@ public class AuthAutoConfiguration {
     }
 
     /**
-     * JWT 鉴权实现。
+     * JWT 鉴权实现。gateway（WebFlux）也能装配，用于 reactive 过滤器校验 token。
      */
     @Bean
     @ConditionalOnProperty(prefix = "auth", name = "type", havingValue = "JWT", matchIfMissing = true)
     @ConditionalOnClass(BCryptPasswordEncoder.class)
-    @ConditionalOnBean(AuthUserLoader.class)
     public AuthManager jwtAuthManager(AuthProperties props,
-                                      AuthUserLoader loader,
+                                      ObjectProvider<AuthUserLoader> loaderProvider,
                                       PasswordEncoder encoder) {
-        return new JwtAuthManager(props, loader, encoder);
+        return new JwtAuthManager(props, loaderProvider, encoder);
     }
 
     /**
@@ -61,10 +61,9 @@ public class AuthAutoConfiguration {
     @Bean
     @ConditionalOnProperty(prefix = "auth", name = "type", havingValue = "SA_TOKEN")
     @ConditionalOnClass(StpUtil.class)
-    @ConditionalOnBean(AuthUserLoader.class)
     public AuthManager saTokenAuthManager(AuthProperties props,
-                                          AuthUserLoader loader,
+                                          ObjectProvider<AuthUserLoader> loaderProvider,
                                           PasswordEncoder encoder) {
-        return new SaTokenAuthManager(props, loader, encoder);
+        return new SaTokenAuthManager(props, loaderProvider, encoder);
     }
 }

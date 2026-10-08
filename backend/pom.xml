@@ -14,10 +14,8 @@
     <modules>
         <module>common</module>
         <module>auth-starter</module>
-        <!-- 阶段 3 启用
         <module>gateway-service</module>
         <module>user-service</module>
-        -->
     </modules>
 
     <properties>

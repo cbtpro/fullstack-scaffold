@@ -1,0 +1,39 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway-service
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:127.0.0.1:8848}
+        namespace: ${NACOS_NAMESPACE:public}
+    gateway:
+      # 按服务发现自动生成路由，并自定义 /api/** 路径到 user-service
+      routes:
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/user/**,/api/auth/**
+          filters:
+            # 保留 /api 前缀透传下游，便于下游统一鉴权与 OpenAPI
+            - PreserveHostHeader
+      discovery:
+        locator:
+          enabled: false
+          lower-case-service-id: true
+
+# 鉴权：默认 JWT，切换 SA_TOKEN 改此处即可（需在 user-service 同步）
+auth:
+  type: ${AUTH_TYPE:JWT}
+  token-header: Authorization
+  token-prefix: "Bearer "
+  jwt:
+    secret: ${AUTH_JWT_SECRET:fullstack-scaffold-default-secret-please-change-it-32bytes}
+    expire-minutes: 120
+
+logging:
+  level:
+    com.scaffold: INFO
+    org.springframework.cloud.gateway: INFO

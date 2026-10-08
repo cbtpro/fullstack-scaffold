@@ -1,0 +1,74 @@
+server:
+  port: 8001
+
+spring:
+  application:
+    name: user-service
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/fs_user?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:root123}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:127.0.0.1:8848}
+        namespace: ${NACOS_NAMESPACE:public}
+
+# MyBatis-Plus
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+# 鉴权：一行切换 JWT | SA_TOKEN
+# 切换到 SA_TOKEN 时，UserServiceImpl 与 LoginController 无需改动，
+# SecurityAutoConfiguration 已在 Application 类排除，SaInterceptor 接管鉴权。
+auth:
+  type: ${AUTH_TYPE:JWT}
+  token-header: Authorization
+  token-prefix: "Bearer "
+  jwt:
+    secret: ${AUTH_JWT_SECRET:fullstack-scaffold-default-secret-please-change-it-32bytes}
+    expire-minutes: 120
+  sa-token:
+    token-name: Authorization
+    timeout: 7200
+
+# Sa-Token 自身配置（仅 auth.type=SA_TOKEN 生效）
+sa-token:
+  token-name: Authorization
+  timeout: 7200
+  is-concurrent: true
+  is-share: false
+  is-log: false
+  token-style: uuid
+
+# OpenAPI
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    com.scaffold: INFO

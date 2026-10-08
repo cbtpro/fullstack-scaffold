@@ -11,6 +11,7 @@ import com.scaffold.common.api.ResultCode;
 import com.scaffold.common.exception.BizException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 /**
@@ -19,6 +20,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
  * <p>login 把 {@link LoginUser} 存入 token session，{@link #getLoginUser} 按token值取回，
  * {@link #logout} 注销会话。{@link #parseToken} 与 JWT 实现一致，从 {@code Authorization} 头取去前缀 token，
  * 兼容前端统一协议，gateway 的 reactive 过滤器也能直接复用。
+ * {@link AuthUserLoader} 用 {@link ObjectProvider} 延迟获取，gateway 不需提供 loader。
  */
 @Slf4j
 public class SaTokenAuthManager implements AuthManager {
@@ -26,17 +28,21 @@ public class SaTokenAuthManager implements AuthManager {
     private static final String SESSION_KEY = "loginUser";
 
     private final AuthProperties props;
-    private final AuthUserLoader loader;
+    private final ObjectProvider<AuthUserLoader> loaderProvider;
     private final PasswordEncoder encoder;
 
-    public SaTokenAuthManager(AuthProperties props, AuthUserLoader loader, PasswordEncoder encoder) {
+    public SaTokenAuthManager(AuthProperties props, ObjectProvider<AuthUserLoader> loaderProvider, PasswordEncoder encoder) {
         this.props = props;
-        this.loader = loader;
+        this.loaderProvider = loaderProvider;
         this.encoder = encoder;
     }
 
     @Override
     public LoginUser login(LoginRequest req) {
+        AuthUserLoader loader = loaderProvider.getIfAvailable();
+        if (loader == null) {
+            throw new BizException(ResultCode.INTERNAL_ERROR, "AuthUserLoader 未实现，无法登录");
+        }
         LoginUser user = loader.loadUserByUsername(req.getUsername());
         if (user == null) {
             throw new BizException(ResultCode.UNAUTHORIZED, "用户不存在");

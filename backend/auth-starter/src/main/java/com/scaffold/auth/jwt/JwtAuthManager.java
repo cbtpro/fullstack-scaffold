@@ -12,6 +12,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.nio.charset.StandardCharsets;
@@ -25,20 +26,21 @@ import javax.crypto.SecretKey;
  * <ul>
  *   <li>token claims 直接含 userId/username/nickname，{@link #getLoginUser} 从 token 重建，无需回查库</li>
  *   <li>logout 为 no-op：JWT 无状态，客户端 token 至过期前仍有效</li>
- *   <li>密码用 {@link PasswordEncoder}（BCrypt）校验，由 {@link AuthUserLoader} 返回密文</li>
+ *   <li>{@link AuthUserLoader} 用 {@link ObjectProvider} 延迟获取，让 gateway（不调 login）
+ *       即使不提供 loader 也能装配 {@code AuthManager}</li>
  * </ul>
  */
 @Slf4j
 public class JwtAuthManager implements AuthManager {
 
     private final AuthProperties props;
-    private final AuthUserLoader loader;
+    private final ObjectProvider<AuthUserLoader> loaderProvider;
     private final PasswordEncoder encoder;
     private final SecretKey key;
 
-    public JwtAuthManager(AuthProperties props, AuthUserLoader loader, PasswordEncoder encoder) {
+    public JwtAuthManager(AuthProperties props, ObjectProvider<AuthUserLoader> loaderProvider, PasswordEncoder encoder) {
         this.props = props;
-        this.loader = loader;
+        this.loaderProvider = loaderProvider;
         this.encoder = encoder;
         byte[] keyBytes = props.getJwt().getSecret().getBytes(StandardCharsets.UTF_8);
         this.key = Keys.hmacShaKeyFor(keyBytes);
@@ -46,6 +48,10 @@ public class JwtAuthManager implements AuthManager {
 
     @Override
     public LoginUser login(LoginRequest req) {
+        AuthUserLoader loader = loaderProvider.getIfAvailable();
+        if (loader == null) {
+            throw new BizException(ResultCode.INTERNAL_ERROR, "AuthUserLoader 未实现，无法登录");
+        }
         LoginUser user = loader.loadUserByUsername(req.getUsername());
         if (user == null) {
             throw new BizException(ResultCode.UNAUTHORIZED, "用户不存在");
