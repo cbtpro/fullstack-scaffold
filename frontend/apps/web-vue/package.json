@@ -1,0 +1,33 @@
+{
+  "name": "web-vue",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5174",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview --port 5174",
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "@fs/auth": "workspace:*",
+    "@fs/locales": "workspace:*",
+    "@fs/request": "workspace:*",
+    "@fs/types": "workspace:*",
+    "@fs/utils": "workspace:*",
+    "ant-design-vue": "^4.2.6",
+    "axios": "^1.7.7",
+    "pinia": "^2.2.5",
+    "vue": "^3.5.12",
+    "vue-i18n": "^9.14.5",
+    "vue-router": "^4.4.5"
+  },
+  "devDependencies": {
+    "@fs/tsconfig": "workspace:*",
+    "@types/node": "^20.16.11",
+    "@vitejs/plugin-vue": "^5.1.4",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.10",
+    "vue-tsc": "^2.1.6"
+  }
+}

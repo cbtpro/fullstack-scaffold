@@ -3,6 +3,8 @@ node_modules/
 dist/
 .turbo/
 .cache/
+.nitro/
+.output/
 *.log
 .npmrc.local
 .pnpm-debug.log*

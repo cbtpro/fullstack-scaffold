@@ -1,0 +1,23 @@
+{
+  "name": "backend-mock",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nitro dev --host 0.0.0.0 --port 5180",
+    "build": "nitro build",
+    "preview": "node .output/server/index.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fs/types": "workspace:*",
+    "jose": "^5.9.6",
+    "nitropack": "^2.10.4"
+  },
+  "devDependencies": {
+    "@fs/tsconfig": "workspace:*",
+    "@types/node": "^20.16.11",
+    "h3": "^1.13.4",
+    "typescript": "^5.5.4"
+  }
+}

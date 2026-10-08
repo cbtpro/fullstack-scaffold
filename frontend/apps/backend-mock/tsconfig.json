@@ -1,0 +1,7 @@
+{
+  "extends": "@fs/tsconfig/base.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["server/**/*.ts", "nitro.config.ts"]
+}
