@@ -1,0 +1,22 @@
+{
+  "name": "fullstack-scaffold-frontend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck"
+  },
+  "devDependencies": {
+    "@fs/auth": "workspace:*",
+    "@fs/locales": "workspace:*",
+    "@fs/request": "workspace:*",
+    "@fs/tsconfig": "workspace:*",
+    "@fs/types": "workspace:*",
+    "@fs/utils": "workspace:*",
+    "tsx": "^4.19.2",
+    "turbo": "^2.1.3",
+    "typescript": "^5.5.4"
+  }
+}

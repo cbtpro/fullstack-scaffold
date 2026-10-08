@@ -1,0 +1,21 @@
+{
+  "name": "@fs/auth",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fs/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@fs/tsconfig": "workspace:*"
+  }
+}

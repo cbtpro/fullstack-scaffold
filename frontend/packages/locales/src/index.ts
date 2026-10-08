@@ -1,0 +1,125 @@
+/**
+ * i18n 资源与工厂。React 端用 i18next，Vue 端用 vue-i18n，翻译资源一份。
+ *
+ * 工厂内对框架库使用动态 import，避免 React 应用打包 vue-i18n（反之亦然），
+ * 同时资源对象用 export const / export default（不用 export =）规避 ESM 警告。
+ */
+
+export const zhCN = {
+  common: {
+    confirm: '确认',
+    cancel: '取消',
+    save: '保存',
+    edit: '编辑',
+    delete: '删除',
+    search: '查询',
+    reset: '重置',
+    loading: '加载中...',
+    success: '成功',
+    failed: '失败',
+    back: '返回',
+  },
+  menu: {
+    home: '首页',
+    profile: '个人中心',
+    user: '用户管理',
+  },
+  login: {
+    title: '欢迎登录',
+    username: '用户名',
+    usernamePlaceholder: '请输入用户名',
+    password: '密码',
+    passwordPlaceholder: '请输入密码',
+    submit: '登录',
+    usernameRequired: '请输入用户名',
+    passwordRequired: '请输入密码',
+    success: '登录成功',
+    failed: '登录失败',
+    logout: '退出登录',
+  },
+  user: {
+    list: '用户列表',
+    total: '共 {count} 条',
+  },
+};
+
+export const enUS = {
+  common: {
+    confirm: 'Confirm',
+    cancel: 'Cancel',
+    save: 'Save',
+    edit: 'Edit',
+    delete: 'Delete',
+    search: 'Search',
+    reset: 'Reset',
+    loading: 'Loading...',
+    success: 'Success',
+    failed: 'Failed',
+    back: 'Back',
+  },
+  menu: {
+    home: 'Home',
+    profile: 'Profile',
+    user: 'User Management',
+  },
+  login: {
+    title: 'Sign in',
+    username: 'Username',
+    usernamePlaceholder: 'Enter username',
+    password: 'Password',
+    passwordPlaceholder: 'Enter password',
+    submit: 'Sign in',
+    usernameRequired: 'Please enter username',
+    passwordRequired: 'Please enter password',
+    success: 'Signed in',
+    failed: 'Sign in failed',
+    logout: 'Sign out',
+  },
+  user: {
+    list: 'User List',
+    total: 'Total {count}',
+  },
+};
+
+export type Locale = 'zh-CN' | 'en-US';
+
+/** 默认资源合集，可直接喂给 createReactI18n / createVueI18n。 */
+export const messages = {
+  'zh-CN': zhCN,
+  'en-US': enUS,
+};
+
+export type Messages = typeof messages;
+
+/** 资源结构：locale -> namespace -> 翻译键。 */
+export type Resources = Record<string, Record<string, unknown>>;
+
+/**
+ * 创建 i18next 实例（React 端用）。返回已 init 的实例，可直接与
+ * react-i18next 桥接。动态加载 i18next，避免 Vue 应用打包负担。
+ */
+export async function createReactI18n(resources: Resources = messages, locale: Locale = 'zh-CN') {
+  const { default: i18next } = await import('i18next');
+  const instance = i18next.createInstance();
+  await instance.init({
+    resources: resources as never,
+    lng: locale,
+    fallbackLng: 'zh-CN',
+    interpolation: { escapeValue: false },
+  });
+  return instance;
+}
+
+/**
+ * 创建 vue-i18n 实例（Vue 端用）。返回可直接 app.use 的 i18n 对象。
+ * 动态加载 vue-i18n，避免 React 应用打包负担。
+ */
+export async function createVueI18n(resources: Resources = messages, locale: Locale = 'zh-CN') {
+  const { createI18n } = await import('vue-i18n');
+  return createI18n({
+    legacy: false,
+    locale,
+    fallbackLocale: 'zh-CN',
+    messages: resources as never,
+  });
+}

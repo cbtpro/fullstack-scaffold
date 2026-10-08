@@ -1,0 +1,23 @@
+{
+  "name": "@fs/request",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fs/auth": "workspace:*",
+    "@fs/types": "workspace:*",
+    "axios": "^1.7.7"
+  },
+  "devDependencies": {
+    "@fs/tsconfig": "workspace:*"
+  }
+}
