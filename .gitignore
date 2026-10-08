@@ -31,6 +31,7 @@ HELP.md
 
 # OS
 .DS_Store
+._*
 Thumbs.db
 
 # Env / secrets
