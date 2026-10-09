@@ -115,15 +115,23 @@ export default function BasicLayout() {
     return match.length ? match : [location.pathname];
   }, [menuItems, location.pathname]);
 
+  const [collapsed, setCollapsed] = useState(false);
+
   return (
     <RequireAuth>
       <Layout style={{ minHeight: '100vh' }}>
-        <Sider breakpoint="lg" collapsible style={{ background: '#001529' }}>
+        <Sider
+          breakpoint="lg"
+          collapsible
+          collapsed={collapsed}
+          onCollapse={setCollapsed}
+          style={{ background: '#001529' }}
+        >
           <div
             style={{
               height: 48,
               color: '#fff',
-              fontSize: 16,
+              fontSize: collapsed ? 20 : 16,
               fontWeight: 600,
               textAlign: 'center',
               lineHeight: '48px',
@@ -131,11 +139,12 @@ export default function BasicLayout() {
               whiteSpace: 'nowrap',
             }}
           >
-            fullstack-scaffold
+            {collapsed ? 'FS' : 'fullstack-scaffold'}
           </div>
           <Menu
             theme="dark"
             mode="inline"
+            inlineCollapsed={collapsed}
             selectedKeys={selectedKeys}
             items={menuItems}
             onClick={({ key }) => navigate(key)}
