@@ -38,23 +38,24 @@
         </template>
       </template>
     </a-table>
-    <UserFormModal v-model:open="formOpen" :mode="formMode" :record="current" @saved="onSaved" />
-    <UserDetailModal v-model:open="detailOpen" :record="current" />
   </a-card>
 </template>
 
 <script setup lang="ts">
+/**
+ * 用户列表页：分页查询 + 删除；查看/编辑/新增跳转三态表单页（user-detail/user-edit/user-create）。
+ */
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRouter } from 'vue-router';
 import { message } from 'ant-design-vue';
 import type { PageResult, User } from '@fs/types';
 import { hasPermission } from '@fs/auth';
 import { fs } from '@/request';
 import { useAuthStore } from '@/store/auth';
-import UserFormModal from './UserFormModal.vue';
-import UserDetailModal from './UserDetailModal.vue';
 
 const { t } = useI18n();
+const router = useRouter();
 const auth = useAuthStore();
 const loading = ref(false);
 const data = reactive<PageResult<User>>({
@@ -63,12 +64,6 @@ const data = reactive<PageResult<User>>({
   pageNum: 1,
   pageSize: 10,
 });
-
-// 弹窗状态：formOpen 承载 新增/编辑，detailOpen 承载 查看
-const formOpen = ref(false);
-const formMode = ref<'create' | 'edit'>('create');
-const detailOpen = ref(false);
-const current = ref<User | null>(null);
 
 const columns = computed(() => [
   { title: 'ID', dataIndex: 'id', width: 80 },
@@ -118,26 +113,15 @@ function onPageChange(p: { current?: number; pageSize?: number }) {
 }
 
 function openCreate() {
-  formMode.value = 'create';
-  current.value = null;
-  formOpen.value = true;
+  router.push({ name: 'user-create' });
 }
 
 function openEdit(record: User) {
-  formMode.value = 'edit';
-  current.value = record;
-  formOpen.value = true;
+  router.push({ name: 'user-edit', params: { id: String(record.id) } });
 }
 
 function openDetail(record: User) {
-  current.value = record;
-  detailOpen.value = true;
-}
-
-function onSaved() {
-  formOpen.value = false;
-  message.success(t('user.saveSuccess'));
-  reload(data.pageNum, data.pageSize);
+  router.push({ name: 'user-detail', params: { id: String(record.id) } });
 }
 
 // 指令只管 DOM 移除，popconfirm 触发器需要 v-if 同步判定

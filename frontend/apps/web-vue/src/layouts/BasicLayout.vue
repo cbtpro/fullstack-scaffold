@@ -53,7 +53,12 @@ const user = computed(() => auth.user);
 const menus = ref<FsMenu[]>([]);
 const collapsed = ref(false);
 
-const selectedKeys = computed(() => [route.path]);
+// 菜单高亮按路径前缀匹配，三态页等子路由也能点亮所属菜单
+const selectedKeys = computed(() => {
+  const keys = ['/home', ...menus.value.map((m) => m.path)];
+  const match = keys.find((k) => route.path === k || route.path.startsWith(`${k}/`));
+  return [match ?? route.path];
+});
 
 interface MenuItem {
   key: string;

@@ -1,25 +1,19 @@
 /**
- * 用户列表页：分页查询 + 查看 / 新增 / 编辑 弹窗。
+ * 用户列表页：分页查询 + 删除；查看/编辑/新增跳转三态表单页（/user/detail|edit|create）。
  * 操作按钮经 AuthButton 按 RBAC 权限码控制渲染。
  */
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button, Card, Popconfirm, Space, Table, Tag, Typography, message, type TableColumnsType } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type { PageResult, User } from '@fs/types';
 import { fs } from '@/request';
 import AuthButton from '@/components/AuthButton';
 import { usePermission } from '@/hooks/usePermission';
-import UserFormModal from './UserFormModal';
-import UserDetailModal from './UserDetailModal';
-
-type ModalState =
-  | { mode: 'create' }
-  | { mode: 'edit'; record: User }
-  | { mode: 'view'; record: User }
-  | null;
 
 export default function UserListPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { can } = usePermission();
   const [data, setData] = useState<PageResult<User>>({
     list: [],
@@ -28,7 +22,6 @@ export default function UserListPage() {
     pageSize: 10,
   });
   const [loading, setLoading] = useState(false);
-  const [modal, setModal] = useState<ModalState>(null);
 
   // 后端 PageQuery 参数为 page/size（pageNum/pageSize 会被忽略导致翻页失效）
   const reload = (page = 1, size = 10) => {
@@ -41,12 +34,6 @@ export default function UserListPage() {
   useEffect(() => {
     reload(1, 10);
   }, []);
-
-  const onSaved = () => {
-    setModal(null);
-    message.success(t('user.saveSuccess'));
-    reload(data.pageNum, data.pageSize);
-  };
 
   const onDelete = (record: User) => {
     fs.delete<void>(`/user/${record.id}`).then(() => {
@@ -79,10 +66,10 @@ export default function UserListPage() {
       width: 200,
       render: (_, record) => (
         <Space>
-          <AuthButton perm="user:view" size="small" onClick={() => setModal({ mode: 'view', record })}>
+          <AuthButton perm="user:view" size="small" onClick={() => navigate(`/user/detail/${record.id}`)}>
             {t('common.view')}
           </AuthButton>
-          <AuthButton perm="user:update" size="small" onClick={() => setModal({ mode: 'edit', record })}>
+          <AuthButton perm="user:update" size="small" onClick={() => navigate(`/user/edit/${record.id}`)}>
             {t('common.edit')}
           </AuthButton>
           {/* Popconfirm 需要 element 子节点挂触发器，无权限时不渲染 Popconfirm 本身 */}
@@ -109,7 +96,7 @@ export default function UserListPage() {
         <Typography.Title level={3} style={{ margin: 0 }}>
           {t('user.list')}
         </Typography.Title>
-        <AuthButton perm="user:create" type="primary" onClick={() => setModal({ mode: 'create' })}>
+        <AuthButton perm="user:create" type="primary" onClick={() => navigate('/user/create')}>
           {t('common.create')}
         </AuthButton>
       </Space>
@@ -126,18 +113,6 @@ export default function UserListPage() {
           showTotal: (total) => t('user.total', { count: total }),
           onChange: (page, pageSize) => reload(page, pageSize),
         }}
-      />
-      <UserFormModal
-        open={modal?.mode === 'create' || modal?.mode === 'edit'}
-        mode={modal?.mode === 'edit' ? 'edit' : 'create'}
-        record={modal?.mode === 'edit' ? modal.record : undefined}
-        onCancel={() => setModal(null)}
-        onSaved={onSaved}
-      />
-      <UserDetailModal
-        open={modal?.mode === 'view'}
-        record={modal?.mode === 'view' ? modal.record : undefined}
-        onClose={() => setModal(null)}
       />
     </Card>
   );
