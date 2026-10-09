@@ -10,6 +10,7 @@ import { Button, Card, Form, Input, Select, Skeleton, Space, Tag, Typography, me
 import { useTranslation } from 'react-i18next';
 import type { User } from '@fs/types';
 import { fs } from '@/request';
+import { useAuth } from '@/store/auth';
 import { usePermission } from '@/hooks/usePermission';
 
 type Mode = 'create' | 'detail' | 'edit';
@@ -24,6 +25,7 @@ export default function UserFormPage() {
   const navigate = useNavigate();
   const params = useParams();
   const { can } = usePermission();
+  const user = useAuth((s) => s.user);
   const matchedEdit = useMatch('/user/edit/:id');
   const matchedDetail = useMatch('/user/detail/:id');
   const mode: Mode = matchedEdit ? 'edit' : matchedDetail ? 'detail' : 'create';
@@ -97,7 +99,15 @@ export default function UserFormPage() {
     }
   }
 
-  // 权限不足直接重定向，避免页面先渲染再被接口拒绝
+  // 权限不足直接重定向，避免页面先渲染再被接口拒绝；
+  // user 未就绪（布局层异步拉取 /user/info）时权限集合为空，先渲染骨架等待，否则会误判踢回
+  if (!user) {
+    return (
+      <Card>
+        <Skeleton active />
+      </Card>
+    );
+  }
   if (mode === 'create' && !can('user:create')) {
     return <Navigate to="/user" replace />;
   }
