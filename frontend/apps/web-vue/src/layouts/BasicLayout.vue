@@ -1,7 +1,9 @@
 <template>
   <a-layout class="layout-root">
-    <a-layout-sider breakpoint="lg" collapsible>
-      <div class="logo">fullstack-scaffold</div>
+    <a-layout-sider v-model:collapsed="collapsed" breakpoint="lg" collapsible>
+      <div class="logo" :class="{ 'logo--collapsed': collapsed }">
+        {{ collapsed ? 'FS' : 'fullstack-scaffold' }}
+      </div>
       <a-menu
         theme="dark"
         mode="inline"
@@ -49,6 +51,7 @@ const router = useRouter();
 const auth = useAuthStore();
 const user = computed(() => auth.user);
 const menus = ref<FsMenu[]>([]);
+const collapsed = ref(false);
 
 const selectedKeys = computed(() => [route.path]);
 
@@ -138,6 +141,9 @@ function onAccountClick({ key }: { key: string }) {
   line-height: 48px;
   overflow: hidden;
   white-space: nowrap;
+}
+.logo--collapsed {
+  font-size: 20px;
 }
 .header {
   background: #fff;
