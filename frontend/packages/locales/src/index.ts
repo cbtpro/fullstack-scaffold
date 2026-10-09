@@ -97,12 +97,21 @@ export type Resources = Record<string, Record<string, unknown>>;
 /**
  * 创建 i18next 实例（React 端用）。返回已 init 的实例，可直接与
  * react-i18next 桥接。动态加载 i18next，避免 Vue 应用打包负担。
+ *
+ * <p>i18next 与 vue-i18n 的资源结构不同：i18next 要求 `{ lng: { namespace: { key } } }`，
+ * 而 vue-i18n 要求 `{ lng: { key } }`。组件调用 `t('login.title')` 时，i18next 在默认
+ * namespace `translation` 下查找嵌套 key `login.title`，故需将资源包裹到 `translation` 下。
  */
 export async function createReactI18n(resources: Resources = messages, locale: Locale = 'zh-CN') {
   const { default: i18next } = await import('i18next');
   const instance = i18next.createInstance();
+  // 将 { lng: { login: {...}, common: {...} } } 转为 { lng: { translation: { login: {...}, common: {...} } } }
+  const wrapped: Resources = {};
+  for (const [lng, val] of Object.entries(resources)) {
+    wrapped[lng] = { translation: val };
+  }
   await instance.init({
-    resources: resources as never,
+    resources: wrapped as never,
     lng: locale,
     fallbackLng: 'zh-CN',
     interpolation: { escapeValue: false },
