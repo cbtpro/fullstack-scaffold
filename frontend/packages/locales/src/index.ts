@@ -21,6 +21,7 @@ export const zhCN = {
     failed: '失败',
     back: '返回',
     operation: '操作',
+    noPermission: '暂无操作权限',
   },
   menu: {
     home: '首页',
@@ -83,6 +84,7 @@ export const enUS = {
     failed: 'Failed',
     back: 'Back',
     operation: 'Actions',
+    noPermission: 'No permission',
   },
   menu: {
     home: 'Home',

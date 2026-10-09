@@ -102,16 +102,15 @@ import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { message } from 'ant-design-vue';
 import type { User } from '@fs/types';
-import { hasPermission } from '@fs/auth';
 import { fs } from '@/request';
-import { useAuthStore } from '@/store/auth';
+import { usePermission } from '@/composables/usePermission';
 
 type Mode = 'create' | 'detail' | 'edit';
 
 const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
-const auth = useAuthStore();
+const { can } = usePermission();
 
 const mode = computed<Mode>(() =>
   route.name === 'user-edit' ? 'edit' : route.name === 'user-detail' ? 'detail' : 'create',
@@ -182,8 +181,8 @@ watch([mode, record], ([m, rec]) => {
   }
 });
 
-const canCreate = computed(() => hasPermission(auth.user?.permissions ?? [], 'user:create'));
-const canEdit = computed(() => hasPermission(auth.user?.permissions ?? [], 'user:update'));
+const canCreate = computed(() => can('user:create'));
+const canEdit = computed(() => can('user:update'));
 
 // 无权限访问对应模式时直接重定向，避免页面先渲染再被接口拒绝
 watchEffect(() => {

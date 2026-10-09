@@ -154,6 +154,51 @@ export function hasAnyPermission(
     : values.some((v) => permissions.includes(v));
 }
 
+/** 权限规则：codes / roles / customFn 均可选，空数组与未指定同义（不加限制）。 */
+export interface PermissionRule<T = unknown> {
+  /** 需要的权限码，任一满足即通过 */
+  codes?: string[];
+  /** 需要的角色编码，仅当未指定非空 codes 时检查 */
+  roles?: string[];
+  /** 业务条件（如记录状态），通过权限/角色检查后执行，最终裁决 */
+  customFn?: (userRoles: string[], extra?: T) => boolean;
+  /** 传给 customFn 的业务数据 */
+  extra?: T;
+}
+
+/** 组合判定的入参：用户侧权限/角色 + 权限规则。 */
+export interface PermissionCheckParams<T = unknown> extends PermissionRule<T> {
+  /** 用户权限码集合（后端下发，含超管通配符） */
+  permissions?: string[] | null;
+  /** 用户角色编码集合 */
+  userRoles?: string[] | null;
+}
+
+/**
+ * 组合权限判定（唯一规则源，Hook / 包装组件 / 过滤列表共用）：
+ *
+ * 1. 指定非空 codes 时按权限码判定（超管通配符直接通过），否则跳过
+ * 2. 未指定非空 codes 且指定非空 roles 时按角色判定
+ * 3. 两者都未指定表示没有权限限制
+ * 4. customFn 为业务条件（如记录状态），权限/角色通过后仍需满足；
+ *    超管可以绕过权限码检查，但不能绕过业务条件
+ *
+ * 界面显示策略与接口授权各管各的，后端必须继续独立鉴权。
+ */
+export function checkPermission<T = unknown>(params: PermissionCheckParams<T>): boolean {
+  const { permissions, userRoles, codes, roles, customFn, extra } = params;
+
+  let allowed = true;
+  if (codes && codes.length > 0) {
+    allowed = codes.some((code) => hasPermission(permissions, code));
+  } else if (roles && roles.length > 0) {
+    allowed = roles.some((role) => hasRole(userRoles, role));
+  }
+  if (!allowed) return false;
+
+  return !customFn || customFn(userRoles ?? [], extra);
+}
+
 /**
  * 框架无关路由守卫工厂。返回守卫函数：输入目标路径，返回 true 放行，
  * 返回字符串则重定向到该路径。React/Vue 路由各自适配。

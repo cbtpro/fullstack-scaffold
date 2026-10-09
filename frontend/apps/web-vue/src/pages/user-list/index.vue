@@ -2,9 +2,9 @@
   <a-card>
     <div class="toolbar">
       <a-typography-title :level="3" class="title">{{ t('user.list') }}</a-typography-title>
-      <a-button v-permission="'user:create'" type="primary" @click="openCreate">
-        {{ t('common.create') }}
-      </a-button>
+      <Permission codes="user:create">
+        <a-button type="primary" @click="openCreate">{{ t('common.create') }}</a-button>
+      </Permission>
     </div>
     <a-table
       row-key="id"
@@ -18,22 +18,23 @@
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === '__op'">
           <a-space>
-            <a-button v-permission="'user:view'" size="small" @click="openDetail(record)">
-              {{ t('common.view') }}
-            </a-button>
-            <a-button v-permission="'user:update'" size="small" @click="openEdit(record)">
-              {{ t('common.edit') }}
-            </a-button>
-            <!-- v-permission 无权限时移除按钮节点；外层 popconfirm 若保留会因无触发子节点而失效 -->
-            <a-popconfirm
-              v-if="canDelete"
-              :title="t('user.deleteConfirm')"
-              :ok-text="t('common.confirm')"
-              :cancel-text="t('common.cancel')"
-              @confirm="onDelete(record)"
-            >
-              <a-button danger size="small">{{ t('common.delete') }}</a-button>
-            </a-popconfirm>
+            <Permission codes="user:view" fallback="disable">
+              <a-button size="small" @click="openDetail(record)">{{ t('common.view') }}</a-button>
+            </Permission>
+            <Permission codes="user:update" fallback="disable" :custom-fn="canEditRecord" :extra="record">
+              <a-button size="small" @click="openEdit(record)">{{ t('common.edit') }}</a-button>
+            </Permission>
+            <!-- Popconfirm 整体包进权限组件，无权限时触发器与确认层一起卸载 -->
+            <Permission codes="user:delete">
+              <a-popconfirm
+                :title="t('user.deleteConfirm')"
+                :ok-text="t('common.confirm')"
+                :cancel-text="t('common.cancel')"
+                @confirm="onDelete(record)"
+              >
+                <a-button danger size="small">{{ t('common.delete') }}</a-button>
+              </a-popconfirm>
+            </Permission>
           </a-space>
         </template>
       </template>
@@ -43,20 +44,20 @@
 
 <script setup lang="ts">
 /**
- * 用户列表页：分页查询 + 删除；查看/编辑/新增跳转三态表单页（user-detail/user-edit/user-create）。
+ * 用户列表页：分页查询 + 删除；查看/编辑/新增跳转三态表单页（user-create/user-detail/user-edit）。
+ * 操作权限走包装器模式：Permission 负责放行与否，view/edit 灰置提示、
+ * Popconfirm 整体隐藏，edit 叠加记录状态业务条件（customFn），后端仍需独立鉴权。
  */
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { message } from 'ant-design-vue';
 import type { PageResult, User } from '@fs/types';
-import { hasPermission } from '@fs/auth';
 import { fs } from '@/request';
-import { useAuthStore } from '@/store/auth';
+import Permission from '@/components/permission/Permission.vue';
 
 const { t } = useI18n();
 const router = useRouter();
-const auth = useAuthStore();
 const loading = ref(false);
 const data = reactive<PageResult<User>>({
   list: [],
@@ -124,8 +125,10 @@ function openDetail(record: User) {
   router.push({ name: 'user-detail', params: { id: String(record.id) } });
 }
 
-// 指令只管 DOM 移除，popconfirm 触发器需要 v-if 同步判定
-const canDelete = computed(() => hasPermission(auth.user?.permissions ?? [], 'user:delete'));
+/** 业务条件：仅启用状态的用户可编辑（控制界面入口，后端仍需独立鉴权） */
+function canEditRecord(_userRoles: string[], extra?: unknown) {
+  return (extra as User | undefined)?.status === 1;
+}
 
 function onDelete(record: User) {
   fs.delete<void>(`/user/${record.id}`).then(() => {

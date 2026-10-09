@@ -1,38 +1,36 @@
 /**
- * 权限判定 hook。订阅 zustand auth store，把当前用户的 permissions/roles
- * 绑定到 {@link hasPermission} / {@link hasRole}，组件内按需调用即可触发渲染。
+ * 权限判定 hook。订阅 zustand auth store，把当前用户的权限/角色
+ * 绑定到 @fs/auth 的 {@link checkPermission} 组合判定上。
  *
- * 与 @fs/auth 的纯函数解耦：组件只关心「是否放行」，不关心 user 数据结构。
+ * - 无参调用：拿到 check / can 做按需判定
+ * - 传入规则：hasAuth 为该规则的判定结果，规则支持权限码、角色与业务条件
+ *
+ * 组件只关心「是否放行」，判定规则统一收敛在纯函数里，避免多处口径不一致。
  */
 import { useMemo } from 'react';
-import { hasAnyPermission, hasPermission, hasRole } from '@fs/auth';
+import { checkPermission, type PermissionRule } from '@fs/auth';
 import { useAuth } from '@/store/auth';
 
-export interface PermissionApi {
-  /** 当前用户权限编码集合 */
-  permissions: string[];
-  /** 当前用户角色编码集合 */
-  roles: string[];
-  /** 是否拥有指定权限 */
-  can: (perm: string) => boolean;
-  /** 是否拥有指定角色 */
-  is: (role: string) => boolean;
-  /** 多权限批量判定，默认 AND */
-  canAny: (perms: string[], logical?: 'AND' | 'OR') => boolean;
+export interface PermissionApi<T = unknown> {
+  /** 调用时传入的规则的判定结果；未传规则时恒为 true */
+  hasAuth: boolean;
+  /** 按传入规则判定，用于过滤操作列表等场景 */
+  check: (rule?: PermissionRule<T>) => boolean;
+  /** 单个权限码判定的便捷封装 */
+  can: (code: string) => boolean;
 }
 
-export function usePermission(): PermissionApi {
+export function usePermission<T = unknown>(rule?: PermissionRule<T>): PermissionApi<T> {
   const user = useAuth((s) => s.user);
-  return useMemo<PermissionApi>(() => {
+  return useMemo<PermissionApi<T>>(() => {
     const permissions = user?.permissions ?? [];
-    const roles = user?.roles ?? [];
+    const userRoles = user?.roles ?? [];
+    const check = (r: PermissionRule<T> = {}) =>
+      checkPermission<T>({ permissions, userRoles, ...r });
     return {
-      permissions,
-      roles,
-      can: (perm: string) => hasPermission(permissions, perm),
-      is: (role: string) => hasRole(roles, role),
-      canAny: (perms: string[], logical: 'AND' | 'OR' = 'AND') =>
-        hasAnyPermission(permissions, perms, logical),
+      hasAuth: check(rule),
+      check,
+      can: (code) => check({ codes: [code] }),
     };
-  }, [user]);
+  }, [user, rule]);
 }

@@ -6,7 +6,6 @@ import { createAuthGuard, clearToken } from '@fs/auth';
 import type { Menu as FsMenu, User } from '@fs/types';
 import { fs } from '@/request';
 import { authStore, useAuth } from '@/store/auth';
-import { usePermission } from '@/hooks/usePermission';
 import { MenuIcon } from '@/components/MenuIcon';
 
 const { Header, Sider, Content } = Layout;
@@ -49,7 +48,6 @@ export default function BasicLayout() {
   const location = useLocation();
   const user = useAuth((s) => s.user);
   const setAuth = useAuth((s) => s.set);
-  const { can } = usePermission();
   const [menus, setMenus] = useState<FsMenu[]>([]);
 
   // 拉取当前用户信息（login 响应里的 user 已含 permissions，这里补拉一次以同步最新角色/权限）

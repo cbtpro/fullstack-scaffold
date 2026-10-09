@@ -5,7 +5,6 @@ import 'ant-design-vue/dist/reset.css';
 import { createVueI18n } from '@fs/locales';
 import App from './App.vue';
 import router from './router';
-import { permission as vPermission } from './directives/permission';
 import './index.css';
 
 async function bootstrap() {
@@ -15,7 +14,6 @@ async function bootstrap() {
   app.use(i18n);
   app.use(Antd);
   app.use(router);
-  app.directive('permission', vPermission);
   app.mount('#app');
 }
 

@@ -1,20 +1,25 @@
 /**
- * 权限判定 composable。读取当前 auth store 的用户 permissions/roles，
- * 暴露 hasPermission / hasRole 工具函数，与 @fs/auth 的纯函数解耦。
+ * 权限判定 composable。读取当前 auth store 的用户权限/角色，
+ * 绑定到 @fs/auth 的 checkPermission 组合判定上。
+ *
+ * - 无参调用：拿到 check / can 做按需判定
+ * - 传入规则：hasAuth 为该规则的判定结果（响应式，权限未加载时保持追踪）
  */
 import { computed } from 'vue';
-import { hasAnyPermission, hasPermission, hasRole } from '@fs/auth';
+import { checkPermission, type PermissionRule } from '@fs/auth';
 import { useAuthStore } from '@/store/auth';
 
-export function usePermission() {
+export function usePermission<T = unknown>(rule?: PermissionRule<T>) {
   const auth = useAuthStore();
-  const permissions = computed<string[]>(() => auth.user?.permissions ?? []);
-  const roles = computed<string[]>(() => auth.user?.roles ?? []);
 
-  const can = (perm: string) => hasPermission(permissions.value, perm);
-  const is = (role: string) => hasRole(roles.value, role);
-  const canAny = (perms: string[], logical: 'AND' | 'OR' = 'AND') =>
-    hasAnyPermission(permissions.value, perms, logical);
+  const check = (r: PermissionRule<T> = {}) =>
+    checkPermission<T>({ permissions: auth.user?.permissions, userRoles: auth.user?.roles, ...r });
 
-  return { permissions, roles, can, is, canAny };
+  /** 单个权限码判定的便捷封装 */
+  const can = (code: string) => check({ codes: [code] });
+
+  /** 调用时传入的规则的判定结果；未传规则时恒为 true */
+  const hasAuth = computed(() => check(rule));
+
+  return { hasAuth, check, can };
 }
