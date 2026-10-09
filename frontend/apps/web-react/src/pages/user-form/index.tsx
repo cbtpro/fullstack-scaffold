@@ -4,7 +4,7 @@
  * record 为已保存快照，表单仅是其草稿：进入编辑=快照复制，取消编辑=回详情恢复快照，
  * 保存成功=以接口返回值更新快照后跳转详情，页面自身不维护"脏"状态。
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, useMatch, useNavigate, useParams } from 'react-router-dom';
 import { Button, Card, Form, Input, Select, Skeleton, Space, Tag, Typography, message } from 'antd';
 import { useTranslation } from 'react-i18next';
@@ -34,20 +34,16 @@ export default function UserFormPage() {
   const [error, setError] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form] = Form.useForm();
-  // 已加载的记录 id：同 id 内切换 编辑/详情 不重复拉取（如保存后跳详情）
-  const loadedIdRef = useRef<string>();
 
   useEffect(() => {
     if (!id) {
-      loadedIdRef.current = undefined;
       setRecord(null);
       setError(false);
       setLoading(false);
       form.resetFields();
       return;
     }
-    if (loadedIdRef.current === id) return;
-    loadedIdRef.current = id;
+    // active 标志防竞态：id 变化或 StrictMode 卸载重挂后，旧请求响应一律丢弃
     let active = true;
     setRecord(null);
     setError(false);
@@ -93,7 +89,6 @@ export default function UserFormPage() {
         mode === 'edit'
           ? await fs.put<User>('/user', { ...values, id: record?.id })
           : await fs.post<User>('/user', values);
-      loadedIdRef.current = String(saved.id);
       setRecord(saved);
       message.success(t('user.saveSuccess'));
       navigate(`/user/detail/${saved.id}`, { replace: true });
