@@ -1,6 +1,7 @@
 {
   "name": "fullstack-scaffold-frontend",
   "private": true,
+  "packageManager": "pnpm@10.33.0",
   "type": "module",
   "scripts": {
     "dev": "turbo run dev",
