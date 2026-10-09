@@ -5,7 +5,8 @@ FROM node:20-alpine AS builder
 RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
 WORKDIR /build
 COPY frontend/ ./
-RUN pnpm install --frozen-lockfile
+RUN pnpm config set registry https://registry.npmmirror.com && \
+    pnpm install --frozen-lockfile
 RUN pnpm --filter web-react build
 
 FROM nginx:alpine
