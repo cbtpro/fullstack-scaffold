@@ -1,17 +1,9 @@
 <template>
   <a-card :title="title">
     <template #extra>
-      <a-space>
-        <template v-if="mode === 'detail'">
-          <a-button @click="backToList">{{ t('user.backToList') }}</a-button>
-          <a-button v-if="canEdit" type="primary" @click="beginEdit">{{ t('common.edit') }}</a-button>
-        </template>
-        <template v-else>
-          <a-button :disabled="saving" @click="cancelEdit">
-            {{ mode === 'edit' ? t('user.cancelEdit') : t('common.cancel') }}
-          </a-button>
-          <a-button type="primary" :loading="saving" @click="handleSave">{{ t('common.save') }}</a-button>
-        </template>
+      <a-space v-if="mode === 'detail'">
+        <a-button @click="backToList">{{ t('user.backToList') }}</a-button>
+        <a-button v-if="canEdit" type="primary" @click="beginEdit">{{ t('common.edit') }}</a-button>
       </a-space>
     </template>
 
@@ -87,6 +79,16 @@
         </a-select>
       </a-form-item>
     </a-form>
+
+    <!-- 长表单吸底操作栏：隐藏占位 → 滚动吸附 → 锚点可见恢复文档流 -->
+    <StickyActions v-if="mode !== 'detail' && !loading && !loadError">
+      <a-space>
+        <a-button :disabled="saving" @click="cancelEdit">
+          {{ mode === 'edit' ? t('user.cancelEdit') : t('common.cancel') }}
+        </a-button>
+        <a-button type="primary" :loading="saving" @click="handleSave">{{ t('common.save') }}</a-button>
+      </a-space>
+    </StickyActions>
   </a-card>
 </template>
 
@@ -103,7 +105,9 @@ import { useRoute, useRouter } from 'vue-router';
 import { message } from 'ant-design-vue';
 import type { User } from '@fs/types';
 import { fs } from '@/request';
+import { useAuthStore } from '@/store/auth';
 import { usePermission } from '@/composables/usePermission';
+import StickyActions from '@/components/StickyActions.vue';
 
 type Mode = 'create' | 'detail' | 'edit';
 
@@ -111,6 +115,7 @@ const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
 const { can } = usePermission();
+const auth = useAuthStore();
 
 const mode = computed<Mode>(() =>
   route.name === 'user-edit' ? 'edit' : route.name === 'user-detail' ? 'detail' : 'create',
@@ -184,8 +189,10 @@ watch([mode, record], ([m, rec]) => {
 const canCreate = computed(() => can('user:create'));
 const canEdit = computed(() => can('user:update'));
 
-// 无权限访问对应模式时直接重定向，避免页面先渲染再被接口拒绝
+// 无权限访问对应模式时直接重定向，避免页面先渲染再被接口拒绝；
+// user 未就绪（布局层异步拉取 /user/info）时权限集合为空，先等待再判定，否则刷新直达会被误杀
 watchEffect(() => {
+  if (!auth.user) return;
   if (mode.value === 'create' && !canCreate.value) {
     router.replace({ name: 'user' });
   } else if (mode.value === 'edit' && !canEdit.value) {

@@ -21,3 +21,27 @@ a {
 .ant-layout-sider-collapsed .ant-menu-title-content {
   display: none !important;
 }
+
+/* 吸底操作栏：三态共用同一占位高度，visibility 切换避免文档流抖动 */
+.sticky-actions-anchor {
+  height: 0;
+}
+
+.sticky-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  margin-top: 16px;
+  padding-top: 12px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid #f0f0f0;
+  background: #fff;
+}
+
+.sticky-actions--hidden {
+  visibility: hidden;
+}
+
+.sticky-actions--inline {
+  position: static;
+}

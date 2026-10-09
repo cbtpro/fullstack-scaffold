@@ -12,6 +12,7 @@ import type { User } from '@fs/types';
 import { fs } from '@/request';
 import { useAuth } from '@/store/auth';
 import { usePermission } from '@/hooks/usePermission';
+import { StickyActions } from '@/components/StickyActions';
 
 type Mode = 'create' | 'detail' | 'edit';
 
@@ -122,27 +123,16 @@ export default function UserFormPage() {
     <Card
       title={title}
       extra={
-        <Space>
-          {mode === 'detail' ? (
-            <>
-              <Button onClick={() => navigate('/user')}>{t('user.backToList')}</Button>
-              {can('user:update') && (
-                <Button type="primary" onClick={() => navigate(`/user/edit/${id}`)}>
-                  {t('common.edit')}
-                </Button>
-              )}
-            </>
-          ) : (
-            <>
-              <Button disabled={saving} onClick={() => navigate(mode === 'edit' ? `/user/detail/${id}` : '/user')}>
-                {mode === 'edit' ? t('user.cancelEdit') : t('common.cancel')}
+        mode === 'detail' ? (
+          <Space>
+            <Button onClick={() => navigate('/user')}>{t('user.backToList')}</Button>
+            {can('user:update') && (
+              <Button type="primary" onClick={() => navigate(`/user/edit/${id}`)}>
+                {t('common.edit')}
               </Button>
-              <Button type="primary" loading={saving} onClick={handleSave}>
-                {t('common.save')}
-              </Button>
-            </>
-          )}
-        </Space>
+            )}
+          </Space>
+        ) : undefined
       }
     >
       {loading ? (
@@ -177,16 +167,17 @@ export default function UserFormPage() {
           <Form.Item label={t('user.updateTime')}>{formatTime(record?.updateTime)}</Form.Item>
         </Form>
       ) : (
-        // 详情/编辑两个 Form 结构不同但组件类型相同，React 复用会污染 rc-field-form
-        // 内部状态（initialValues 不应用、Field 不注册），必须用 key 强制独立挂载
-        <Form
-          key="edit"
-          form={form}
-          layout="vertical"
-          style={{ maxWidth: 480 }}
-          disabled={saving}
-          initialValues={{ status: 1 }}
-        >
+        <>
+          {/* 详情/编辑两个 Form 结构不同但组件类型相同，React 复用会污染 rc-field-form
+              内部状态（initialValues 不应用、Field 不注册），必须用 key 强制独立挂载 */}
+          <Form
+            key="edit"
+            form={form}
+            layout="vertical"
+            style={{ maxWidth: 480 }}
+            disabled={saving}
+            initialValues={{ status: 1 }}
+          >
           <Form.Item
             name="username"
             label={t('login.username')}
@@ -218,7 +209,19 @@ export default function UserFormPage() {
               ]}
             />
           </Form.Item>
-        </Form>
+          </Form>
+          {/* 长表单吸底操作栏：隐藏占位 → 滚动吸附 → 锚点可见恢复文档流 */}
+          <StickyActions>
+            <Space>
+              <Button disabled={saving} onClick={() => navigate(mode === 'edit' ? `/user/detail/${id}` : '/user')}>
+                {mode === 'edit' ? t('user.cancelEdit') : t('common.cancel')}
+              </Button>
+              <Button type="primary" loading={saving} onClick={handleSave}>
+                {t('common.save')}
+              </Button>
+            </Space>
+          </StickyActions>
+        </>
       )}
     </Card>
   );
