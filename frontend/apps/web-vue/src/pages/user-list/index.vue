@@ -24,6 +24,16 @@
             <a-button v-permission="'user:update'" size="small" @click="openEdit(record)">
               {{ t('common.edit') }}
             </a-button>
+            <!-- v-permission 无权限时移除按钮节点；外层 popconfirm 若保留会因无触发子节点而失效 -->
+            <a-popconfirm
+              v-if="canDelete"
+              :title="t('user.deleteConfirm')"
+              :ok-text="t('common.confirm')"
+              :cancel-text="t('common.cancel')"
+              @confirm="onDelete(record)"
+            >
+              <a-button danger size="small">{{ t('common.delete') }}</a-button>
+            </a-popconfirm>
           </a-space>
         </template>
       </template>
@@ -38,11 +48,14 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { message } from 'ant-design-vue';
 import type { PageResult, User } from '@fs/types';
+import { hasPermission } from '@fs/auth';
 import { fs } from '@/request';
+import { useAuthStore } from '@/store/auth';
 import UserFormModal from './UserFormModal.vue';
 import UserDetailModal from './UserDetailModal.vue';
 
 const { t } = useI18n();
+const auth = useAuthStore();
 const loading = ref(false);
 const data = reactive<PageResult<User>>({
   list: [],
@@ -125,6 +138,16 @@ function onSaved() {
   formOpen.value = false;
   message.success(t('user.saveSuccess'));
   reload(data.pageNum, data.pageSize);
+}
+
+// 指令只管 DOM 移除，popconfirm 触发器需要 v-if 同步判定
+const canDelete = computed(() => hasPermission(auth.user?.permissions ?? [], 'user:delete'));
+
+function onDelete(record: User) {
+  fs.delete<void>(`/user/${record.id}`).then(() => {
+    message.success(t('user.deleteSuccess'));
+    reload(data.pageNum, data.pageSize);
+  });
 }
 
 onMounted(() => reload(1, 10));

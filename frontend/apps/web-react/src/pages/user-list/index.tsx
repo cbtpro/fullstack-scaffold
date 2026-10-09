@@ -3,11 +3,12 @@
  * 操作按钮经 AuthButton 按 RBAC 权限码控制渲染。
  */
 import { useEffect, useState } from 'react';
-import { Card, Space, Table, Tag, Typography, message, type TableColumnsType } from 'antd';
+import { Button, Card, Popconfirm, Space, Table, Tag, Typography, message, type TableColumnsType } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type { PageResult, User } from '@fs/types';
 import { fs } from '@/request';
 import AuthButton from '@/components/AuthButton';
+import { usePermission } from '@/hooks/usePermission';
 import UserFormModal from './UserFormModal';
 import UserDetailModal from './UserDetailModal';
 
@@ -19,6 +20,7 @@ type ModalState =
 
 export default function UserListPage() {
   const { t } = useTranslation();
+  const { can } = usePermission();
   const [data, setData] = useState<PageResult<User>>({
     list: [],
     total: 0,
@@ -44,6 +46,13 @@ export default function UserListPage() {
     setModal(null);
     message.success(t('user.saveSuccess'));
     reload(data.pageNum, data.pageSize);
+  };
+
+  const onDelete = (record: User) => {
+    fs.delete<void>(`/user/${record.id}`).then(() => {
+      message.success(t('user.deleteSuccess'));
+      reload(data.pageNum, data.pageSize);
+    });
   };
 
   const columns: TableColumnsType<User> = [
@@ -76,6 +85,19 @@ export default function UserListPage() {
           <AuthButton perm="user:update" size="small" onClick={() => setModal({ mode: 'edit', record })}>
             {t('common.edit')}
           </AuthButton>
+          {/* Popconfirm 需要 element 子节点挂触发器，无权限时不渲染 Popconfirm 本身 */}
+          {can('user:delete') && (
+            <Popconfirm
+              title={t('user.deleteConfirm')}
+              okText={t('common.confirm')}
+              cancelText={t('common.cancel')}
+              onConfirm={() => onDelete(record)}
+            >
+              <Button danger size="small">
+                {t('common.delete')}
+              </Button>
+            </Popconfirm>
+          )}
         </Space>
       ),
     },
