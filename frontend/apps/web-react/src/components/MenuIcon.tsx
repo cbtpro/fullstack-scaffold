@@ -19,15 +19,13 @@ const ICON_PATHS: Record<string, string> = {
  */
 export function MenuIcon({ icon }: { icon?: string }): ReactNode {
   if (!icon || !(icon in ICON_PATHS)) return null;
+  // 包一层 span.anticon：antd Menu 的图标间距/对齐样式作用在 .anticon 上，
+  // 裸 svg 会与文字挤在一起
   return (
-    <svg
-      viewBox="0 0 1024 1024"
-      width="1em"
-      height="1em"
-      fill="currentColor"
-      aria-hidden="true"
-    >
-      <path d={ICON_PATHS[icon]} />
-    </svg>
+    <span role="img" className="anticon" aria-hidden="true">
+      <svg viewBox="0 0 1024 1024" width="1em" height="1em" fill="currentColor">
+        <path d={ICON_PATHS[icon]} />
+      </svg>
+    </span>
   );
 }
