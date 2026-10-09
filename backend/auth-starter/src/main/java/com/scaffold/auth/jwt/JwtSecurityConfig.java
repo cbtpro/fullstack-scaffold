@@ -1,9 +1,12 @@
 package com.scaffold.auth.jwt;
 
+import com.scaffold.common.api.ResultCode;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -50,6 +53,15 @@ public class JwtSecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PERMIT_PATHS).permitAll()
                         .anyRequest().authenticated())
+                .exceptionHandling(eh -> eh.authenticationEntryPoint((request, response, ex) -> {
+                    // Spring Security 6.x 默认对未认证请求返回 403，此处修正为 401，
+                    // 与网关 AuthGlobalFilter 保持一致，便于前端统一处理鉴权失败
+                    response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                    response.getWriter().write(
+                            "{\"code\":" + ResultCode.UNAUTHORIZED.getCode()
+                                    + ",\"message\":\"未登录或token无效\"}");
+                }))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

@@ -129,6 +129,15 @@ export function createRequest(config: RequestConfig = {}): FsRequest {
     },
     (error) => {
       loadingBus.done();
+      // HTTP 401/403：token 缺失、过期或权限不足，统一清 token 并触发 onAuthExpired
+      const status = error.response?.status;
+      if (status === 401 || status === 403) {
+        clearToken();
+        config.onAuthExpired?.();
+        const body = error.response?.data as ApiResponse | undefined;
+        const message = body?.message ?? (status === 401 ? '未登录或token无效' : '无权限访问');
+        return Promise.reject(new FsBusinessError(message, status));
+      }
       config.onNetworkError?.(error);
       return Promise.reject(error);
     },
