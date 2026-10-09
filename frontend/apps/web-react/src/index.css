@@ -16,3 +16,8 @@ a {
   color: inherit;
   text-decoration: none;
 }
+
+/* antd Sider 折叠时强制隐藏 Menu 文字标签，仅显示图标 */
+.ant-layout-sider-collapsed .ant-menu-title-content {
+  display: none !important;
+}
