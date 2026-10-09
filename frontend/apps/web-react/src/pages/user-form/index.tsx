@@ -162,7 +162,7 @@ export default function UserFormPage() {
           </div>
         </div>
       ) : mode === 'detail' ? (
-        <Form layout="vertical" style={{ maxWidth: 480 }}>
+        <Form key="detail" layout="vertical" style={{ maxWidth: 480 }}>
           <Form.Item label={t('login.username')}>{record?.username ?? '-'}</Form.Item>
           <Form.Item label={t('user.nickname')}>{record?.nickname || '-'}</Form.Item>
           <Form.Item label={t('user.email')}>{record?.email || '-'}</Form.Item>
@@ -177,7 +177,10 @@ export default function UserFormPage() {
           <Form.Item label={t('user.updateTime')}>{formatTime(record?.updateTime)}</Form.Item>
         </Form>
       ) : (
+        // 详情/编辑两个 Form 结构不同但组件类型相同，React 复用会污染 rc-field-form
+        // 内部状态（initialValues 不应用、Field 不注册），必须用 key 强制独立挂载
         <Form
+          key="edit"
           form={form}
           layout="vertical"
           style={{ maxWidth: 480 }}
