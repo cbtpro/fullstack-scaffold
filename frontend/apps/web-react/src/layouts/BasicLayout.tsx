@@ -144,7 +144,6 @@ export default function BasicLayout() {
           <Menu
             theme="dark"
             mode="inline"
-            inlineCollapsed={collapsed}
             selectedKeys={selectedKeys}
             items={menuItems}
             onClick={({ key }) => navigate(key)}
