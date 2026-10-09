@@ -1,9 +1,21 @@
+/**
+ * 用户列表页：分页查询 + 查看 / 新增 / 编辑 弹窗。
+ * 操作按钮经 AuthButton 按 RBAC 权限码控制渲染。
+ */
 import { useEffect, useState } from 'react';
-import { Card, Space, Table, Tag, Typography, type TableColumnsType } from 'antd';
+import { Card, Space, Table, Tag, Typography, message, type TableColumnsType } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type { PageResult, User } from '@fs/types';
 import { fs } from '@/request';
 import AuthButton from '@/components/AuthButton';
+import UserFormModal from './UserFormModal';
+import UserDetailModal from './UserDetailModal';
+
+type ModalState =
+  | { mode: 'create' }
+  | { mode: 'edit'; record: User }
+  | { mode: 'view'; record: User }
+  | null;
 
 export default function UserListPage() {
   const { t } = useTranslation();
@@ -14,54 +26,56 @@ export default function UserListPage() {
     pageSize: 10,
   });
   const [loading, setLoading] = useState(false);
+  const [modal, setModal] = useState<ModalState>(null);
 
-  const reload = (pageNum = 1, pageSize = 10) => {
+  // 后端 PageQuery 参数为 page/size（pageNum/pageSize 会被忽略导致翻页失效）
+  const reload = (page = 1, size = 10) => {
     setLoading(true);
-    fs.get<PageResult<User>>('/user/list', { params: { pageNum, pageSize } })
+    fs.get<PageResult<User>>('/user/list', { params: { page, size } })
       .then((res) => setData(res))
       .finally(() => setLoading(false));
   };
 
   useEffect(() => {
-    let active = true;
-    setLoading(true);
-    fs.get<PageResult<User>>('/user/list', { params: { pageNum: 1, pageSize: 10 } })
-      .then((res) => {
-        if (active) setData(res);
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
+    reload(1, 10);
   }, []);
+
+  const onSaved = () => {
+    setModal(null);
+    message.success(t('user.saveSuccess'));
+    reload(data.pageNum, data.pageSize);
+  };
 
   const columns: TableColumnsType<User> = [
     { title: 'ID', dataIndex: 'id', width: 80 },
     { title: t('login.username'), dataIndex: 'username' },
-    { title: 'Nickname', dataIndex: 'nickname' },
-    { title: 'Email', dataIndex: 'email' },
+    { title: t('user.nickname'), dataIndex: 'nickname', render: (v) => v ?? '-' },
+    { title: t('user.email'), dataIndex: 'email', render: (v) => v ?? '-' },
     {
-      title: 'Roles',
+      title: t('user.roles'),
       dataIndex: 'roles',
-      render: (roles?: string[]) => roles?.map((r) => <Tag key={r}>{r}</Tag>) ?? null,
+      render: (roles?: string[]) => roles?.map((r) => <Tag key={r}>{r}</Tag>) ?? '-',
     },
     {
-      title: t('common.success'),
+      title: t('user.status'),
       dataIndex: 'status',
+      width: 90,
       render: (s?: number) =>
-        s === 1 ? <Tag color="green">{t('common.success')}</Tag> : <Tag>{t('common.failed')}</Tag>,
+        s === 1 ? <Tag color="green">{t('user.enabled')}</Tag> : <Tag>{t('user.disabled')}</Tag>,
     },
-    { title: 'createTime', dataIndex: 'createTime' },
+    { title: t('user.createTime'), dataIndex: 'createTime', width: 180 },
     {
       title: t('common.operation'),
       key: '__op',
       width: 200,
-      render: () => (
+      render: (_, record) => (
         <Space>
-          <AuthButton perm="user:update" size="small">编辑</AuthButton>
-          <AuthButton perm="user:delete" size="small" danger>删除</AuthButton>
+          <AuthButton perm="user:view" size="small" onClick={() => setModal({ mode: 'view', record })}>
+            {t('common.view')}
+          </AuthButton>
+          <AuthButton perm="user:update" size="small" onClick={() => setModal({ mode: 'edit', record })}>
+            {t('common.edit')}
+          </AuthButton>
         </Space>
       ),
     },
@@ -70,9 +84,11 @@ export default function UserListPage() {
   return (
     <Card>
       <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }}>
-        <Typography.Title level={3} style={{ margin: 0 }}>{t('user.list')}</Typography.Title>
-        <AuthButton perm="user:create" type="primary" onClick={() => reload()}>
-          {t('common.create', '新增')}
+        <Typography.Title level={3} style={{ margin: 0 }}>
+          {t('user.list')}
+        </Typography.Title>
+        <AuthButton perm="user:create" type="primary" onClick={() => setModal({ mode: 'create' })}>
+          {t('common.create')}
         </AuthButton>
       </Space>
       <Table
@@ -88,6 +104,18 @@ export default function UserListPage() {
           showTotal: (total) => t('user.total', { count: total }),
           onChange: (page, pageSize) => reload(page, pageSize),
         }}
+      />
+      <UserFormModal
+        open={modal?.mode === 'create' || modal?.mode === 'edit'}
+        mode={modal?.mode === 'edit' ? 'edit' : 'create'}
+        record={modal?.mode === 'edit' ? modal.record : undefined}
+        onCancel={() => setModal(null)}
+        onSaved={onSaved}
+      />
+      <UserDetailModal
+        open={modal?.mode === 'view'}
+        record={modal?.mode === 'view' ? modal.record : undefined}
+        onClose={() => setModal(null)}
       />
     </Card>
   );

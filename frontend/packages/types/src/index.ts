@@ -7,6 +7,8 @@
 export interface User {
   id: number | string;
   username: string;
+  /** 密码。仅创建/修改请求携带；后端响应始终不返回（@JsonIgnore） */
+  password?: string;
   nickname?: string;
   avatar?: string;
   email?: string;
