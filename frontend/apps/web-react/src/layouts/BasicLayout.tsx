@@ -7,6 +7,7 @@ import type { Menu as FsMenu, User } from '@fs/types';
 import { fs } from '@/request';
 import { authStore, useAuth } from '@/store/auth';
 import { MenuIcon } from '@/components/MenuIcon';
+import TabBar from '@/components/TabBar';
 
 const { Header, Sider, Content } = Layout;
 
@@ -164,6 +165,7 @@ export default function BasicLayout() {
             </Dropdown>
           </Header>
           <Content style={{ margin: 16 }}>
+            <TabBar />
             <Outlet />
           </Content>
         </Layout>

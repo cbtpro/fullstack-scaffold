@@ -29,6 +29,7 @@
         </a-dropdown>
       </a-layout-header>
       <a-layout-content class="content">
+        <TabBar />
         <router-view />
       </a-layout-content>
     </a-layout>
@@ -44,6 +45,7 @@ import type { Menu as FsMenu, User } from '@fs/types';
 import { fs } from '@/request';
 import { useAuthStore } from '@/store/auth';
 import { MenuIcon } from '@/components/MenuIcon';
+import TabBar from '@/components/TabBar.vue';
 
 const { t } = useI18n();
 const route = useRoute();
