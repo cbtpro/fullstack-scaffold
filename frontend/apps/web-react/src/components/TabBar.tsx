@@ -10,9 +10,11 @@ import { useTranslation } from 'react-i18next';
 /** 翻译函数形态（i18next TFunction 可赋值给该子集） */
 type Translator = (key: string) => string;
 
-/** 路由 handle：title 为 i18n key，或按路由参数生成文案的函数 */
+/** 路由 handle：title 为 i18n key 或按路由参数生成文案的函数；permission 声明进入该路由所需权限码 */
 export interface RouteHandle {
   title?: string | ((t: Translator, params: Params<string>) => string);
+  /** 进入该路由所需权限码（数组时任一满足即可）；布局级 403 守卫使用 */
+  permission?: string | string[];
 }
 
 interface RouteTab {

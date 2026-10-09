@@ -30,7 +30,11 @@
       </a-layout-header>
       <a-layout-content class="content">
         <TabBar />
-        <router-view />
+        <!-- 布局级 403 守卫：路由 meta 声明 permission，无对应权限码时不渲染页面；
+             user 未就绪（权限集合为空）先渲染骨架等待，避免刷新直达被误判 -->
+        <a-skeleton v-if="!user" active />
+        <ForbiddenPage v-else-if="forbidden" />
+        <router-view v-else />
       </a-layout-content>
     </a-layout>
   </a-layout>
@@ -44,8 +48,10 @@ import { clearToken } from '@fs/auth';
 import type { Menu as FsMenu, User } from '@fs/types';
 import { fs } from '@/request';
 import { useAuthStore } from '@/store/auth';
+import { usePermission } from '@/composables/usePermission';
 import { MenuIcon } from '@/components/MenuIcon';
 import TabBar from '@/components/TabBar.vue';
+import ForbiddenPage from '@/pages/error/Forbidden.vue';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -60,6 +66,14 @@ const selectedKeys = computed(() => {
   const keys = ['/home', ...menus.value.map((m) => m.path)];
   const match = keys.find((k) => route.path === k || route.path.startsWith(`${k}/`));
   return [match ?? route.path];
+});
+
+// 布局级 403 守卫判定：路由 meta 声明 permission，当前用户无对应权限码时拦截
+const { check } = usePermission();
+const forbidden = computed(() => {
+  const required = route.meta.permission;
+  if (!user.value || !required) return false;
+  return !check({ codes: Array.isArray(required) ? required : [required] });
 });
 
 interface MenuItem {

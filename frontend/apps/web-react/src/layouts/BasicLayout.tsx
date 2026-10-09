@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Layout, Menu, Dropdown, Skeleton, type MenuProps } from 'antd';
-import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, Outlet, useLocation, useMatches, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { createAuthGuard, clearToken } from '@fs/auth';
 import type { Menu as FsMenu, User } from '@fs/types';
 import { fs } from '@/request';
 import { authStore, useAuth } from '@/store/auth';
+import { usePermission } from '@/hooks/usePermission';
 import { MenuIcon } from '@/components/MenuIcon';
-import TabBar from '@/components/TabBar';
+import TabBar, { type RouteHandle } from '@/components/TabBar';
+import ForbiddenPage from '@/pages/error/Forbidden';
 
 const { Header, Sider, Content } = Layout;
 
@@ -116,6 +118,17 @@ export default function BasicLayout() {
 
   const [collapsed, setCollapsed] = useState(false);
 
+  // 布局级 403 守卫：路由 handle 声明 permission，当前用户无对应权限码时不渲染页面；
+  // user 未就绪（权限集合为空）先渲染骨架等待，避免刷新直达被误判
+  const { check } = usePermission();
+  const matches = useMatches();
+  const leaf = matches[matches.length - 1];
+  const requiredPermission = (leaf?.handle as RouteHandle | undefined)?.permission;
+  const forbidden =
+    !!user &&
+    !!requiredPermission &&
+    !check({ codes: Array.isArray(requiredPermission) ? requiredPermission : [requiredPermission] });
+
   return (
     <RequireAuth>
       <Layout style={{ minHeight: '100vh' }}>
@@ -166,7 +179,7 @@ export default function BasicLayout() {
           </Header>
           <Content style={{ margin: 16 }}>
             <TabBar />
-            <Outlet />
+            {user ? (forbidden ? <ForbiddenPage /> : <Outlet />) : <Skeleton active />}
           </Content>
         </Layout>
       </Layout>

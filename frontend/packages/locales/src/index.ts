@@ -66,6 +66,12 @@ export const zhCN = {
     passwordEditHint: '留空则不修改密码',
     emailInvalid: '邮箱格式不正确',
   },
+  error: {
+    notFoundTitle: '页面不存在',
+    notFoundDesc: '您访问的页面不存在或已被移除',
+    forbiddenDesc: '您没有权限访问该页面，请联系管理员',
+    backHome: '返回首页',
+  },
 };
 
 export const enUS = {
@@ -128,6 +134,12 @@ export const enUS = {
     passwordHint: 'Defaults to 123456 if left empty',
     passwordEditHint: 'Leave blank to keep current password',
     emailInvalid: 'Invalid email format',
+  },
+  error: {
+    notFoundTitle: 'Page Not Found',
+    notFoundDesc: 'The page you are looking for does not exist or has been removed',
+    forbiddenDesc: 'You do not have permission to access this page, please contact the administrator',
+    backHome: 'Back to Home',
   },
 };
 
