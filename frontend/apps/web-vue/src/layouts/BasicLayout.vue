@@ -34,13 +34,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, h, onMounted, ref, watch, type VNode } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { clearToken } from '@fs/auth';
 import type { Menu as FsMenu, User } from '@fs/types';
 import { fs } from '@/request';
 import { useAuthStore } from '@/store/auth';
+import { MenuIcon } from '@/components/MenuIcon';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -54,7 +55,7 @@ const selectedKeys = computed(() => [route.path]);
 interface MenuItem {
   key: string;
   label: string;
-  icon?: string;
+  icon?: VNode;
   children?: MenuItem[];
 }
 
@@ -62,21 +63,22 @@ interface MenuItem {
 function toItems(list: FsMenu[]): MenuItem[] {
   return list.map((m): MenuItem => {
     const label = m.meta?.title ?? m.name;
+    const icon = m.meta?.icon ? h(MenuIcon, { icon: m.meta.icon }) : undefined;
     if (m.children && m.children.length > 0) {
       return {
         key: m.path,
         label,
-        icon: m.meta?.icon,
+        icon,
         children: toItems(m.children),
       };
     }
-    return { key: m.path, label, icon: m.meta?.icon };
+    return { key: m.path, label, icon };
   });
 }
 
 /** 本地 home 菜单 + 后端动态菜单合并 */
 const menuItems = computed(() => [
-  { key: '/home', label: t('menu.home') },
+  { key: '/home', label: t('menu.home'), icon: h(MenuIcon, { icon: 'home' }) },
   ...toItems(menus.value),
 ]);
 

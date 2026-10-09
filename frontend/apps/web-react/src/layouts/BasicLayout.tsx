@@ -7,6 +7,7 @@ import type { Menu as FsMenu, User } from '@fs/types';
 import { fs } from '@/request';
 import { authStore, useAuth } from '@/store/auth';
 import { usePermission } from '@/hooks/usePermission';
+import { MenuIcon } from '@/components/MenuIcon';
 
 const { Header, Sider, Content } = Layout;
 
@@ -29,15 +30,16 @@ type AntdMenuItem = Required<MenuProps>['items'][number];
 function toAntdItems(menus: FsMenu[]): AntdMenuItem[] {
   return menus.map((m) => {
     const label = m.meta?.title ?? m.name;
+    const icon = <MenuIcon icon={m.meta?.icon} />;
     if (m.children && m.children.length > 0) {
       return {
         key: m.path,
         label,
-        icon: m.meta?.icon,
+        icon,
         children: toAntdItems(m.children),
       } as AntdMenuItem;
     }
-    return { key: m.path, label, icon: m.meta?.icon } as AntdMenuItem;
+    return { key: m.path, label, icon } as AntdMenuItem;
   });
 }
 
@@ -90,7 +92,7 @@ export default function BasicLayout() {
 
   // 后端菜单树 → antd Menu items；再叠加本地 home 菜单（无权限限制）
   const menuItems = useMemo<AntdMenuItem[]>(() => {
-    const items: AntdMenuItem[] = [{ key: '/home', label: t('menu.home') }];
+    const items: AntdMenuItem[] = [{ key: '/home', label: t('menu.home'), icon: <MenuIcon icon="home" /> }];
     const dynamic = toAntdItems(menus);
     return items.concat(dynamic);
   }, [menus, t]);
