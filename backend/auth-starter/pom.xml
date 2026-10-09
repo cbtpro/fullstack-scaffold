@@ -50,6 +50,13 @@
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
+        <!-- AOP：PermissionAspect 切面依赖 spring-aop + aspectjweaver，
+             non-optional 传递给业务方 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
+
         <!-- Sa-Token：optional，仅 auth.type=SA_TOKEN 时由业务方引入激活 -->
         <dependency>
             <groupId>cn.dev33</groupId>

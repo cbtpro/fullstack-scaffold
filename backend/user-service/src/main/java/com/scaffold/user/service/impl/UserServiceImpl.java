@@ -10,6 +10,7 @@ import com.scaffold.common.api.ResultCode;
 import com.scaffold.common.exception.BizException;
 import com.scaffold.user.entity.User;
 import com.scaffold.user.mapper.UserMapper;
+import com.scaffold.user.service.RbacService;
 import com.scaffold.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +25,8 @@ import java.util.List;
  *
  * <p>{@link #loadUserByUsername} 返回带密码的 {@link LoginUser}（BCrypt 密文），
  * 由 auth-starter 的 {@code AuthManager} 完成密码校验与 token 签发。
+ * 登录链路在此处通过 {@link RbacService} 加载角色与权限，写入 LoginUser → token claims，
+ * 后续接口调用直接从 token 还原，无需回查库。
  */
 @Slf4j
 @Service
@@ -32,6 +35,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
+    private final RbacService rbacService;
 
     @Override
     public PageResult<User> page(PageQuery query, String keyword) {
@@ -107,12 +111,18 @@ public class UserServiceImpl implements UserService {
             throw new BizException(ResultCode.FORBIDDEN, "用户已被禁用");
         }
         LoginUser loginUser = new LoginUser();
-        loginUser.setUserId(user.getId());
+        loginUser.setId(user.getId());
         loginUser.setUsername(user.getUsername());
         loginUser.setNickname(user.getNickname());
+        loginUser.setEmail(user.getEmail());
+        loginUser.setPhone(user.getPhone());
+        loginUser.setStatus(user.getStatus());
+        loginUser.setCreateTime(user.getCreateTime());
+        loginUser.setUpdateTime(user.getUpdateTime());
         loginUser.setPassword(user.getPassword());
-        loginUser.setPermissions(Collections.emptyList());
-        loginUser.setRoles(Collections.emptyList());
+        // 通过 RBAC 服务加载角色与权限编码，写入 LoginUser → token claims
+        loginUser.setRoles(rbacService.listRoleCodesByUserId(user.getId()));
+        loginUser.setPermissions(rbacService.listPermissionCodesByUserId(user.getId()));
         return loginUser;
     }
 

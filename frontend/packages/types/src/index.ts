@@ -28,6 +28,8 @@ export interface LoginRequest {
 export interface LoginResult {
   token: string;
   user?: User;
+  /** 过期时间戳（毫秒），可选，客户端可据此做提前刷新策略 */
+  expireAt?: number;
 }
 
 /** 菜单/路由元信息。前端静态路由或后端下发菜单均按此结构。 */

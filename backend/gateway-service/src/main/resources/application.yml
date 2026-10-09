@@ -19,6 +19,13 @@ spring:
           filters:
             # 保留 /api 前缀透传下游，便于下游统一鉴权与 OpenAPI
             - PreserveHostHeader
+        # API 文档路由：knife4j /doc.html + springdoc /v3/api-docs + swagger-ui + webjars
+        - id: user-service-doc
+          uri: lb://user-service
+          predicates:
+            - Path=/doc.html,/v3/api-docs/**,/swagger-ui/**,/webjars/**,/favicon.ico
+          filters:
+            - PreserveHostHeader
       discovery:
         locator:
           enabled: false

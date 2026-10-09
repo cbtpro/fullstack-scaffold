@@ -6,7 +6,9 @@ import com.scaffold.auth.AuthManager;
 import com.scaffold.auth.AuthProperties;
 import com.scaffold.auth.AuthUserLoader;
 import com.scaffold.auth.model.LoginRequest;
+import com.scaffold.auth.model.LoginResult;
 import com.scaffold.auth.model.LoginUser;
+import com.scaffold.auth.model.UserInfo;
 import com.scaffold.common.api.ResultCode;
 import com.scaffold.common.exception.BizException;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +22,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
  * {@link #logout} 注销会话。{@link #parseToken} 与 JWT 实现一致，从 {@code Authorization} 头取去前缀 token，
  * 兼容前端统一协议，gateway 的 reactive 过滤器也能直接复用。
  * {@link AuthUserLoader} 用 {@link ObjectProvider} 延迟获取，gateway 不需提供 loader。
+ *
+ * <p>响应统一走 {@link LoginResult} / {@link UserInfo}，与前端契约对齐。
  */
 @Slf4j
 public class SaTokenAuthManager implements AuthManager {
@@ -37,7 +41,7 @@ public class SaTokenAuthManager implements AuthManager {
     }
 
     @Override
-    public LoginUser login(LoginRequest req) {
+    public LoginResult login(LoginRequest req) {
         AuthUserLoader loader = loaderProvider.getIfAvailable();
         if (loader == null) {
             throw new BizException(ResultCode.INTERNAL_ERROR, "AuthUserLoader 未实现，无法登录");
@@ -53,22 +57,22 @@ public class SaTokenAuthManager implements AuthManager {
         SaLoginModel loginModel = new SaLoginModel();
         loginModel.setTimeout(props.getSaToken().getTimeout());
 
-        StpUtil.login(user.getUserId(), loginModel);
+        StpUtil.login(user.getId(), loginModel);
         StpUtil.getTokenSession().set(SESSION_KEY, user);
 
         user.setPassword(null);
         user.setToken(StpUtil.getTokenValue());
         user.setExpireAt(System.currentTimeMillis() + props.getSaToken().getTimeout() * 1000L);
-        return user;
+        return LoginResult.of(user);
     }
 
     @Override
-    public LoginUser getLoginUser(String token) {
+    public UserInfo getLoginUser(String token) {
         try {
             Object data = StpUtil.getTokenSessionByToken(token).get(SESSION_KEY);
             if (data instanceof LoginUser user) {
                 user.setToken(token);
-                return user;
+                return UserInfo.from(user);
             }
             throw new BizException(ResultCode.UNAUTHORIZED, "token 会话数据缺失");
         } catch (BizException e) {

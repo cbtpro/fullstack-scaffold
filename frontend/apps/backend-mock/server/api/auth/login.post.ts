@@ -45,6 +45,8 @@ export default defineEventHandler(async (event) => {
     username: record.user.username,
     roles: record.user.roles,
   });
-  const result: LoginResult = { token, user: record.user };
+  // expireAt 与后端 LoginResult 对齐：当前时间 + 2h（与 mock jwt EXPIRES_IN 一致）
+  const expireAt = Date.now() + 2 * 60 * 60 * 1000;
+  const result: LoginResult = { token, user: record.user, expireAt };
   return { code: 0, message: 'ok', data: result } satisfies ApiResponse<LoginResult>;
 });

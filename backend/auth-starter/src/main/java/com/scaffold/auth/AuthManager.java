@@ -1,7 +1,8 @@
 package com.scaffold.auth;
 
 import com.scaffold.auth.model.LoginRequest;
-import com.scaffold.auth.model.LoginUser;
+import com.scaffold.auth.model.LoginResult;
+import com.scaffold.auth.model.UserInfo;
 
 /**
  * 鉴权抽象。由 {@code auth-starter} 根据 {@code auth.type} 自动装配实现：
@@ -13,18 +14,25 @@ import com.scaffold.auth.model.LoginUser;
  *
  * <p>接口不绑定 servlet/reactive 类型，调用方自行从请求头取值后传入
  * {@link #parseToken(String)}，gateway（WebFlux）与 user-service（Servlet）均可复用。
+ *
+ * <p>响应契约统一为 DTO：
+ * <ul>
+ *   <li>{@link #login} 返回 {@link LoginResult}，对齐前端 {@code { token, user, expireAt }} 嵌套结构</li>
+ *   <li>{@link #getLoginUser} 返回 {@link UserInfo}，对齐前端 {@code User} 类型</li>
+ * </ul>
+ * 鉴权内部流转仍使用 {@code LoginUser}（含 password、token、expireAt），不对外暴露。
  */
 public interface AuthManager {
 
     /**
      * 登录。失败抛 {@link com.scaffold.common.exception.BizException}。
      */
-    LoginUser login(LoginRequest req);
+    LoginResult login(LoginRequest req);
 
     /**
-     * 根据 token 还原登录用户。token 失效抛异常。
+     * 根据 token 还原登录用户信息。token 失效抛异常。
      */
-    LoginUser getLoginUser(String token);
+    UserInfo getLoginUser(String token);
 
     /**
      * token 是否有效。

@@ -47,8 +47,9 @@ public class User implements Serializable {
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 
-    /** 逻辑删除 */
+    /** 逻辑删除，仅持久化层使用，序列化时隐藏 */
     @TableLogic
     @TableField(fill = FieldFill.INSERT)
+    @JsonIgnore
     private Integer deleted;
 }

@@ -1,11 +1,12 @@
-import { useEffect, type ReactNode } from 'react';
-import { Layout, Menu, Dropdown, Skeleton } from 'antd';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Layout, Menu, Dropdown, Skeleton, type MenuProps } from 'antd';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { createAuthGuard, clearToken } from '@fs/auth';
-import type { User } from '@fs/types';
+import type { Menu as FsMenu, User } from '@fs/types';
 import { fs } from '@/request';
 import { authStore, useAuth } from '@/store/auth';
+import { usePermission } from '@/hooks/usePermission';
 
 const { Header, Sider, Content } = Layout;
 
@@ -22,17 +23,39 @@ function RequireAuth({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+type AntdMenuItem = Required<MenuProps>['items'][number];
+
+/** 后端菜单树 → antd Menu items；保留 path 作 key，meta.title 作 label。 */
+function toAntdItems(menus: FsMenu[]): AntdMenuItem[] {
+  return menus.map((m) => {
+    const label = m.meta?.title ?? m.name;
+    if (m.children && m.children.length > 0) {
+      return {
+        key: m.path,
+        label,
+        icon: m.meta?.icon,
+        children: toAntdItems(m.children),
+      } as AntdMenuItem;
+    }
+    return { key: m.path, label, icon: m.meta?.icon } as AntdMenuItem;
+  });
+}
+
 export default function BasicLayout() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const user = useAuth((s) => s.user);
   const setAuth = useAuth((s) => s.set);
+  const { can } = usePermission();
+  const [menus, setMenus] = useState<FsMenu[]>([]);
 
+  // 拉取当前用户信息（login 响应里的 user 已含 permissions，这里补拉一次以同步最新角色/权限）
   useEffect(() => {
     if (user) return;
     let active = true;
-    fs.get<User>('/user/info')
+    fs
+      .get<User>('/user/info')
       .then((u) => {
         if (active) setAuth({ user: u });
       })
@@ -44,6 +67,34 @@ export default function BasicLayout() {
     };
   }, [user, setAuth]);
 
+  // 拉取当前用户可见菜单
+  useEffect(() => {
+    if (!user) {
+      setMenus([]);
+      return;
+    }
+    let active = true;
+    fs
+      .get<FsMenu[]>('/user/menus')
+      .then((list) => {
+        if (active) setMenus(list ?? []);
+      })
+      .catch(() => {
+        // 菜单拉取失败不阻断主流程，留空菜单避免白屏
+        if (active) setMenus([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [user]);
+
+  // 后端菜单树 → antd Menu items；再叠加本地 home 菜单（无权限限制）
+  const menuItems = useMemo<AntdMenuItem[]>(() => {
+    const items: AntdMenuItem[] = [{ key: '/home', label: t('menu.home') }];
+    const dynamic = toAntdItems(menus);
+    return items.concat(dynamic);
+  }, [menus, t]);
+
   const onLogout = ({ key }: { key: string }) => {
     if (key !== 'logout') return;
     clearToken();
@@ -51,12 +102,16 @@ export default function BasicLayout() {
     navigate('/login', { replace: true });
   };
 
-  const menuItems = [
-    { key: '/home', label: t('menu.home') },
-    { key: '/user', label: t('menu.user') },
-  ];
-
   const accountItems = [{ key: 'logout', label: t('login.logout') }];
+
+  // 当前路径在 menuItems 中匹配的 key（取前缀，处理 /user/123 等子路径）
+  const selectedKeys = useMemo(() => {
+    const match = menuItems
+      .map((i) => i?.key)
+      .filter((k): k is string => typeof k === 'string')
+      .filter((k) => location.pathname === k || location.pathname.startsWith(`${k}/`));
+    return match.length ? match : [location.pathname];
+  }, [menuItems, location.pathname]);
 
   return (
     <RequireAuth>
@@ -79,7 +134,7 @@ export default function BasicLayout() {
           <Menu
             theme="dark"
             mode="inline"
-            selectedKeys={[location.pathname]}
+            selectedKeys={selectedKeys}
             items={menuItems}
             onClick={({ key }) => navigate(key)}
           />

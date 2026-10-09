@@ -1,4 +1,4 @@
-# fullstack-scaffold 全栈部署档：中间件 + gateway-service + user-service
+# fullstack-scaffold 全栈部署档：中间件 + gateway-service + user-service + web-react + web-vue
 # 用法：docker compose -f docker/docker-compose.yml up -d --build
 
 name: fullstack-scaffold
@@ -133,6 +133,34 @@ services:
         condition: service_healthy
       user-service:
         condition: service_healthy
+    networks:
+      - fs-net
+
+  web-react:
+    build:
+      context: ..
+      dockerfile: docker/web-react/Dockerfile
+    container_name: fs-web-react
+    restart: unless-stopped
+    ports:
+      - "${WEB_REACT_PORT:-5173}:80"
+    depends_on:
+      gateway-service:
+        condition: service_started
+    networks:
+      - fs-net
+
+  web-vue:
+    build:
+      context: ..
+      dockerfile: docker/web-vue/Dockerfile
+    container_name: fs-web-vue
+    restart: unless-stopped
+    ports:
+      - "${WEB_VUE_PORT:-5174}:80"
+    depends_on:
+      gateway-service:
+        condition: service_started
     networks:
       - fs-net
 

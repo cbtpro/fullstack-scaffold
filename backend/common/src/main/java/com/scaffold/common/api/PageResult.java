@@ -9,7 +9,8 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * 分页结果。
+ * 分页结果。字段名与前端 {@code @fs/types PageResult} 契约对齐：
+ * {@code list / total / pageNum / pageSize}，避免前端再做字段映射。
  *
  * @param <T> 记录类型
  */
@@ -22,21 +23,21 @@ public class PageResult<T> implements Serializable {
 
     /** 总记录数 */
     private long total;
-    /** 当前页 */
-    private long page;
+    /** 当前页码 */
+    private long pageNum;
     /** 每页大小 */
-    private long size;
+    private long pageSize;
     /** 当前页记录 */
-    private List<T> records;
+    private List<T> list;
 
     public PageResult() {
     }
 
-    public PageResult(long total, long page, long size, List<T> records) {
+    public PageResult(long total, long pageNum, long pageSize, List<T> list) {
         this.total = total;
-        this.page = page;
-        this.size = size;
-        this.records = records == null ? Collections.emptyList() : records;
+        this.pageNum = pageNum;
+        this.pageSize = pageSize;
+        this.list = list == null ? Collections.emptyList() : list;
     }
 
     public static <T> PageResult<T> empty(PageQuery query) {

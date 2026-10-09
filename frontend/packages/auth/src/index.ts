@@ -107,6 +107,53 @@ export function isAuthenticated(store: AuthStateStore): boolean {
   return !!store.getState().token;
 }
 
+/** 超级权限通配符，持有者视为拥有全部权限。 */
+export const SUPER_PERMISSION = '*:*:*';
+
+/**
+ * 判定当前用户是否拥有指定权限编码。
+ *
+ * - 通配符 {@link SUPER_PERMISSION} 视为超级权限，匹配任意 value
+ * - permissions 为空或不含目标编码返回 false
+ *
+ * 不依赖 store，便于在任意位置（组件、守卫、指令）按当前用户快照调用。
+ */
+export function hasPermission(
+  permissions: string[] | undefined | null,
+  value: string,
+): boolean {
+  if (!permissions || permissions.length === 0) return false;
+  if (permissions.includes(SUPER_PERMISSION)) return true;
+  return permissions.includes(value);
+}
+
+/**
+ * 判定当前用户是否拥有指定角色编码。
+ */
+export function hasRole(
+  roles: string[] | undefined | null,
+  value: string,
+): boolean {
+  if (!roles || roles.length === 0) return false;
+  return roles.includes(value);
+}
+
+/**
+ * 批量权限判定：默认 AND（全部满足），传 {@code 'OR'} 改为任一满足。
+ */
+export function hasAnyPermission(
+  permissions: string[] | undefined | null,
+  values: string[],
+  logical: 'AND' | 'OR' = 'AND',
+): boolean {
+  if (!values || values.length === 0) return true;
+  if (!permissions || permissions.length === 0) return false;
+  if (permissions.includes(SUPER_PERMISSION)) return true;
+  return logical === 'AND'
+    ? values.every((v) => permissions.includes(v))
+    : values.some((v) => permissions.includes(v));
+}
+
 /**
  * 框架无关路由守卫工厂。返回守卫函数：输入目标路径，返回 true 放行，
  * 返回字符串则重定向到该路径。React/Vue 路由各自适配。

@@ -23,6 +23,10 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>17</java.version>
         <maven.compiler.release>17</maven.compiler.release>
+        <!-- Spring Boot 3 / Spring Framework 6 要求参数名可反射，否则 @RequestParam(required=false) String name
+             会因找不到参数名抛 IllegalArgumentException，被 SecurityFilterChain 转成 403。
+             不继承 spring-boot-starter-parent 时必须显式开启。 -->
+        <maven.compiler.parameters>true</maven.compiler.parameters>
 
         <!-- 框架版本：严格对应，禁止被动升级 -->
         <spring-boot.version>3.2.5</spring-boot.version>
@@ -34,6 +38,7 @@
         <sa-token.version>1.39.0</sa-token.version>
         <jjwt.version>0.12.6</jjwt.version>
         <springdoc.version>2.3.0</springdoc.version>
+        <knife4j.version>4.4.0</knife4j.version>
         <lombok.version>1.18.32</lombok.version>
         <hutool.version>5.8.27</hutool.version>
     </properties>
@@ -117,6 +122,13 @@
                 <version>${springdoc.version}</version>
             </dependency>
 
+            <!-- Knife4j：基于 springdoc 的增强 UI（/doc.html），内含 springdoc 依赖 -->
+            <dependency>
+                <groupId>com.github.xiaoymin</groupId>
+                <artifactId>knife4j-openapi3-jakarta-spring-boot-starter</artifactId>
+                <version>${knife4j.version}</version>
+            </dependency>
+
             <!-- Lombok -->
             <dependency>
                 <groupId>org.projectlombok</groupId>
@@ -143,6 +155,7 @@
                     <configuration>
                         <release>${java.version}</release>
                         <encoding>${project.build.sourceEncoding}</encoding>
+                        <parameters>${maven.compiler.parameters}</parameters>
                         <annotationProcessorPaths>
                             <path>
                                 <groupId>org.projectlombok</groupId>

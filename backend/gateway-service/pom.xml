@@ -38,7 +38,7 @@
             <groupId>com.scaffold</groupId>
             <artifactId>auth-starter</artifactId>
             <exclusions>
-                <!-- gateway 是 WebFlux，强制排除 servlet web 与 security，避免触发 servlet 链 -->
+                <!-- gateway 是 WebFlux，强制排除 servlet web / security / aop，避免触发 servlet 链与 PermissionAspect -->
                 <exclusion>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-starter-web</artifactId>
@@ -46,6 +46,10 @@
                 <exclusion>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-starter-security</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-aop</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>org.springframework.boot</groupId>

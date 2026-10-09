@@ -4,7 +4,9 @@ import com.scaffold.auth.AuthManager;
 import com.scaffold.auth.AuthProperties;
 import com.scaffold.auth.AuthUserLoader;
 import com.scaffold.auth.model.LoginRequest;
+import com.scaffold.auth.model.LoginResult;
 import com.scaffold.auth.model.LoginUser;
+import com.scaffold.auth.model.UserInfo;
 import com.scaffold.common.api.ResultCode;
 import com.scaffold.common.exception.BizException;
 import io.jsonwebtoken.Claims;
@@ -15,6 +17,8 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 import javax.crypto.SecretKey;
 
@@ -23,7 +27,8 @@ import javax.crypto.SecretKey;
  *
  * <p>设计取舍：
  * <ul>
- *   <li>token claims 直接含 userId/username/nickname，{@link #getLoginUser} 从 token 重建，无需回查库</li>
+ *   <li>token claims 含 id/username/nickname/avatar/email/phone/status/roles/permissions，
+ *       {@link #getLoginUser} 从 token 重建 {@link UserInfo}，无需回查库</li>
  *   <li>logout 为 no-op：JWT 无状态，客户端 token 至过期前仍有效</li>
  *   <li>{@link AuthUserLoader} 用 {@link ObjectProvider} 延迟获取，让 gateway（不调 login）
  *       即使不提供 loader 也能装配 {@code AuthManager}</li>
@@ -46,7 +51,7 @@ public class JwtAuthManager implements AuthManager {
     }
 
     @Override
-    public LoginUser login(LoginRequest req) {
+    public LoginResult login(LoginRequest req) {
         AuthUserLoader loader = loaderProvider.getIfAvailable();
         if (loader == null) {
             throw new BizException(ResultCode.INTERNAL_ERROR, "AuthUserLoader 未实现，无法登录");
@@ -58,7 +63,7 @@ public class JwtAuthManager implements AuthManager {
         if (user.getPassword() == null || !encoder.matches(req.getPassword(), user.getPassword())) {
             throw new BizException(ResultCode.UNAUTHORIZED, "密码错误");
         }
-        return sign(user);
+        return LoginResult.of(sign(user));
     }
 
     private LoginUser sign(LoginUser user) {
@@ -67,9 +72,16 @@ public class JwtAuthManager implements AuthManager {
         Date expire = new Date(now.getTime() + expireMs);
 
         String token = Jwts.builder()
-                .subject(String.valueOf(user.getUserId()))
+                .subject(String.valueOf(user.getId()))
+                .claim("id", user.getId())
                 .claim("username", user.getUsername())
                 .claim("nickname", user.getNickname())
+                .claim("avatar", user.getAvatar())
+                .claim("email", user.getEmail())
+                .claim("phone", user.getPhone())
+                .claim("status", user.getStatus())
+                .claim("roles", user.getRoles())
+                .claim("permissions", user.getPermissions())
                 .issuedAt(now)
                 .expiration(expire)
                 .signWith(key, Jwts.SIG.HS256)
@@ -82,15 +94,24 @@ public class JwtAuthManager implements AuthManager {
     }
 
     @Override
-    public LoginUser getLoginUser(String token) {
+    public UserInfo getLoginUser(String token) {
         Claims claims = parse(token);
         LoginUser user = new LoginUser();
-        user.setUserId(Long.valueOf(claims.getSubject()));
+        user.setId(claims.get("id", Long.class));
         user.setUsername(claims.get("username", String.class));
         user.setNickname(claims.get("nickname", String.class));
+        user.setAvatar(claims.get("avatar", String.class));
+        user.setEmail(claims.get("email", String.class));
+        user.setPhone(claims.get("phone", String.class));
+        user.setStatus(claims.get("status", Integer.class));
+        user.setRoles(claims.get("roles", java.util.List.class));
+        user.setPermissions(claims.get("permissions", java.util.List.class));
         user.setToken(token);
-        user.setExpireAt(claims.getExpiration().getTime());
-        return user;
+        user.setExpireAt(claims.getExpiration() != null ? claims.getExpiration().getTime() : null);
+        if (claims.getIssuedAt() != null) {
+            user.setCreateTime(LocalDateTime.ofInstant(claims.getIssuedAt().toInstant(), ZoneId.systemDefault()));
+        }
+        return UserInfo.from(user);
     }
 
     private Claims parse(String token) {

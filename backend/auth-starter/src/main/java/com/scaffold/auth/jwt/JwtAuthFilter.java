@@ -1,7 +1,7 @@
 package com.scaffold.auth.jwt;
 
 import com.scaffold.auth.AuthManager;
-import com.scaffold.auth.model.LoginUser;
+import com.scaffold.auth.model.UserInfo;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,7 +16,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * JWT 鉴权过滤器：从请求头解析 token → 加载 LoginUser → 写入 SecurityContext。
+ * JWT 鉴权过滤器：从请求头解析 token → 加载 {@link UserInfo} → 写入 SecurityContext。
  * 仅在 servlet web 环境（{@code auth.type=JWT}）激活。
  */
 public class JwtAuthFilter extends OncePerRequestFilter {
@@ -35,8 +35,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String token = authManager.parseToken(header);
         if (token != null && authManager.check(token)) {
             try {
-                LoginUser user = authManager.getLoginUser(token);
-                List<SimpleGrantedAuthority> authorities = user.getPermissions() == null
+                UserInfo user = authManager.getLoginUser(token);
+                List<SimpleGrantedAuthority> authorities = user == null || user.getPermissions() == null
                         ? Collections.emptyList()
                         : user.getPermissions().stream().map(SimpleGrantedAuthority::new).toList();
                 UsernamePasswordAuthenticationToken authentication =

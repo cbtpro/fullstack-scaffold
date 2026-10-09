@@ -55,13 +55,22 @@ sa-token:
   is-log: false
   token-style: uuid
 
-# OpenAPI
+# OpenAPI / Knife4j
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
     operations-sorter: alpha
   api-docs:
     path: /v3/api-docs
+  group-configs:
+    - group: default
+      paths-to-match: /api/**
+      packages-to-scan: com.scaffold.user.controller
+
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
 
 management:
   endpoints:

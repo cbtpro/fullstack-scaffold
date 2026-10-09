@@ -8,14 +8,18 @@ import { createReactI18n } from '@fs/locales';
 import { router } from './router';
 import './index.css';
 
-const i18n = await createReactI18n();
+async function bootstrap() {
+  const i18n = await createReactI18n();
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <ConfigProvider locale={zhCN} theme={{ token: { borderRadius: 0 } }}>
+        <I18nextProvider i18n={i18n}>
+          <RouterProvider router={router} fallbackElement={<Spin />} />
+        </I18nextProvider>
+      </ConfigProvider>
+    </StrictMode>,
+  );
+}
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <ConfigProvider locale={zhCN} theme={{ token: { borderRadius: 0 } }}>
-      <I18nextProvider i18n={i18n}>
-        <RouterProvider router={router} fallbackElement={<Spin />} />
-      </I18nextProvider>
-    </ConfigProvider>
-  </StrictMode>,
-);
+bootstrap();
+

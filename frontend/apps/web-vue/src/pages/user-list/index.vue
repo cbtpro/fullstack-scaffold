@@ -1,6 +1,15 @@
 <template>
   <a-card>
-    <a-typography-title :level="3">{{ t('user.list') }}</a-typography-title>
+    <div class="toolbar">
+      <a-typography-title :level="3" class="title">{{ t('user.list') }}</a-typography-title>
+      <a-button
+        v-permission="'user:create'"
+        type="primary"
+        @click="reload()"
+      >
+        {{ t('common.create', '新增') }}
+      </a-button>
+    </div>
     <a-table
       row-key="id"
       size="middle"
@@ -8,6 +17,7 @@
       :data-source="data.list"
       :columns="columns"
       :pagination="pagination"
+      @change="onPageChange"
     />
   </a-card>
 </template>
@@ -44,6 +54,12 @@ const columns = computed(() => [
       text === 1 ? t('common.success') : t('common.failed'),
   },
   { title: 'createTime', dataIndex: 'createTime' },
+  {
+    title: t('common.operation'),
+    key: '__op',
+    width: 200,
+    customRender: () => '—',
+  },
 ]);
 
 const pagination = computed(() => ({
@@ -53,9 +69,9 @@ const pagination = computed(() => ({
   showTotal: (total: number) => t('user.total', { count: total }),
 }));
 
-onMounted(() => {
+function reload(pageNum = 1, pageSize = 10) {
   loading.value = true;
-  fs.get<PageResult<User>>('/user/list', { params: { pageNum: 1, pageSize: 10 } })
+  fs.get<PageResult<User>>('/user/list', { params: { pageNum, pageSize } })
     .then((res) => {
       data.list = res.list;
       data.total = res.total;
@@ -65,5 +81,23 @@ onMounted(() => {
     .finally(() => {
       loading.value = false;
     });
-});
+}
+
+function onPageChange(p: { current?: number; pageSize?: number }) {
+  reload(p.current ?? 1, p.pageSize ?? 10);
+}
+
+onMounted(() => reload(1, 10));
 </script>
+
+<style scoped>
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.title {
+  margin: 0;
+}
+</style>

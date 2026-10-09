@@ -2,7 +2,7 @@ package com.scaffold.gateway.filter;
 
 import com.scaffold.auth.AuthManager;
 import com.scaffold.auth.AuthProperties;
-import com.scaffold.auth.model.LoginUser;
+import com.scaffold.auth.model.UserInfo;
 import com.scaffold.common.api.ResultCode;
 import com.scaffold.common.exception.BizException;
 import lombok.extern.slf4j.Slf4j;
@@ -74,9 +74,9 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
         }
 
         try {
-            LoginUser user = authManager.getLoginUser(token);
+            UserInfo user = authManager.getLoginUser(token);
             ServerHttpRequest mutated = exchange.getRequest().mutate()
-                    .header(USER_ID_HEADER, String.valueOf(user.getUserId()))
+                    .header(USER_ID_HEADER, String.valueOf(user.getId()))
                     .header(USERNAME_HEADER, user.getUsername() == null ? "" : user.getUsername())
                     .build();
             return chain.filter(exchange.mutate().request(mutated).build());

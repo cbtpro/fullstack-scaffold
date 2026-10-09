@@ -2,7 +2,7 @@ package com.scaffold.user.controller;
 
 import com.scaffold.auth.AuthManager;
 import com.scaffold.auth.model.LoginRequest;
-import com.scaffold.auth.model.LoginUser;
+import com.scaffold.auth.model.LoginResult;
 import com.scaffold.common.api.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -28,9 +28,9 @@ public class LoginController {
 
     @PostMapping("/login")
     @Operation(summary = "用户登录", description = "校验账号密码并颁发 token")
-    public Result<LoginUser> login(@RequestBody LoginRequest request) {
-        LoginUser user = authManager.login(request);
-        return Result.success(user, "登录成功");
+    public Result<LoginResult> login(@RequestBody LoginRequest request) {
+        LoginResult result = authManager.login(request);
+        return Result.success(result, "登录成功");
     }
 
     @PostMapping("/logout")
