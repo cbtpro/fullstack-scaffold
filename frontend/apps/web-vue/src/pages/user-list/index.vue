@@ -24,6 +24,9 @@
             <Permission codes="user:update" fallback="disable" :custom-fn="canEditRecord" :extra="record">
               <a-button size="small" @click="openEdit(record)">{{ t('common.edit') }}</a-button>
             </Permission>
+            <Permission codes="user:assign-role" fallback="disable">
+              <a-button size="small" @click="onAssignRole(record)">{{ t('user.assignRole') }}</a-button>
+            </Permission>
             <!-- Popconfirm 整体包进权限组件，无权限时触发器与确认层一起卸载 -->
             <Permission codes="user:delete">
               <a-popconfirm
@@ -39,6 +42,22 @@
         </template>
       </template>
     </a-table>
+
+    <!-- 分配角色弹窗 -->
+    <a-modal
+      :title="roleUser ? t('user.assignRoleTitle', { name: roleUser.nickname || roleUser.username }) : ''"
+      v-model:open="roleOpen"
+      @ok="onSaveRole"
+      destroy-on-close
+    >
+      <a-select
+        mode="multiple"
+        style="width: 100%"
+        :placeholder="t('user.roles')"
+        v-model:value="roleIds"
+        :options="roleOptions.map((r) => ({ value: r.id, label: `${r.name} (${r.code})` }))"
+      />
+    </a-modal>
   </a-card>
 </template>
 
@@ -52,7 +71,7 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { message } from 'ant-design-vue';
-import type { PageResult, User } from '@fs/types';
+import type { PageResult, Role, User } from '@fs/types';
 import { fs } from '@/request';
 import Permission from '@/components/permission/Permission.vue';
 
@@ -65,6 +84,12 @@ const data = reactive<PageResult<User>>({
   pageNum: 1,
   pageSize: 10,
 });
+
+// 分配角色弹窗
+const roleOpen = ref(false);
+const roleUser = ref<User | null>(null);
+const roleIds = ref<number[]>([]);
+const roleOptions = ref<Role[]>([]);
 
 const columns = computed(() => [
   { title: 'ID', dataIndex: 'id', width: 80 },
@@ -134,6 +159,25 @@ function onDelete(record: User) {
   fs.delete<void>(`/user/${record.id}`).then(() => {
     message.success(t('user.deleteSuccess'));
     reload(data.pageNum, data.pageSize);
+  });
+}
+
+function onAssignRole(record: User) {
+  roleUser.value = record;
+  Promise.all([fs.get<Role[]>('/role/all'), fs.get<number[]>(`/user/${record.id}/roles`)]).then(
+    ([roles, ids]) => {
+      roleOptions.value = roles;
+      roleIds.value = ids;
+      roleOpen.value = true;
+    },
+  );
+}
+
+function onSaveRole() {
+  if (!roleUser.value) return;
+  fs.put<void>(`/user/${roleUser.value.id}/roles`, roleIds.value).then(() => {
+    message.success(t('user.saveSuccess'));
+    roleOpen.value = false;
   });
 }
 

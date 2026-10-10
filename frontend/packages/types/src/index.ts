@@ -3,6 +3,37 @@
  * 保证前后端契约一致。业务侧可在此扩展领域模型。
  */
 
+/** 角色。对应后端 sys_role 表。 */
+export interface Role {
+  id: number;
+  code: string;
+  name: string;
+  status?: number;
+  sort?: number;
+  description?: string;
+  createTime?: string;
+  updateTime?: string;
+}
+
+/** 权限。对应后端 sys_permission 表，覆盖菜单/按钮/接口三类。 */
+export interface Permission {
+  id: number;
+  parentId: number;
+  code: string;
+  name: string;
+  /** 类型：1菜单 2按钮 3接口 */
+  type: number;
+  path?: string;
+  component?: string;
+  icon?: string;
+  sort?: number;
+  status?: number;
+  createTime?: string;
+  updateTime?: string;
+  /** 树形展示用：子节点 */
+  children?: Permission[];
+}
+
 /** 登录用户。字段与后端 user-service 返回对齐。 */
 export interface User {
   id: number | string;

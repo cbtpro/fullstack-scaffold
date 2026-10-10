@@ -37,6 +37,16 @@ public interface UserService extends AuthUserLoader {
     boolean deleteById(Long id);
 
     /**
+     * 查询用户已分配的角色 id 列表。
+     */
+    java.util.List<Long> listRoleIds(Long userId);
+
+    /**
+     * 为用户分配角色（全量替换，先删后插）。
+     */
+    void assignRoles(Long userId, java.util.List<Long> roleIds);
+
+    /**
      * 按用户名查询（含密码），供登录校验。{@link AuthUserLoader} 契约。
      */
     @Override

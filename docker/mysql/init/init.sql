@@ -161,3 +161,59 @@ WHERE r.`code` = 'ADMIN' AND (p.`code` = 'menu:device' OR p.`code` LIKE 'device:
 INSERT INTO `sys_role_permission` (`role_id`, `permission_id`)
 SELECT r.id, p.id FROM `sys_role` r CROSS JOIN `sys_permission` p
 WHERE r.`code` = 'USER' AND (p.`code` = 'menu:device' OR p.`code` LIKE 'device:%' OR p.`code` LIKE 'api:device:%');
+
+-- ============================================================================
+-- 角色管理权限（仅 ADMIN 拥有全部，USER 仅查看）
+-- ============================================================================
+INSERT INTO `sys_permission` (`parent_id`, `code`, `name`, `type`, `path`, `component`, `icon`, `sort`) VALUES
+    (0, 'menu:role', '角色管理', 1, '/role', 'role-list/index', 'shield', 30);
+SET @roleMenuId = LAST_INSERT_ID();
+INSERT INTO `sys_permission` (`parent_id`, `code`, `name`, `type`, `path`, `component`, `icon`, `sort`) VALUES
+    (@roleMenuId, 'role:view',      '查看',   2, NULL, NULL, NULL, 1),
+    (@roleMenuId, 'role:create',    '新增',   2, NULL, NULL, NULL, 2),
+    (@roleMenuId, 'role:update',    '编辑',   2, NULL, NULL, NULL, 3),
+    (@roleMenuId, 'role:delete',    '删除',   2, NULL, NULL, NULL, 4),
+    (@roleMenuId, 'role:assign',    '分配权限', 2, NULL, NULL, NULL, 5),
+    (0, 'api:role:list',   '角色列表接口',     3, NULL, NULL, NULL, 1),
+    (0, 'api:role:create', '角色创建接口',     3, NULL, NULL, NULL, 2),
+    (0, 'api:role:update', '角色更新接口',     3, NULL, NULL, NULL, 3),
+    (0, 'api:role:delete', '角色删除接口',     3, NULL, NULL, NULL, 4),
+    (0, 'api:role:assign', '角色分配权限接口', 3, NULL, NULL, NULL, 5);
+
+-- ADMIN 绑定全部角色权限
+INSERT INTO `sys_role_permission` (`role_id`, `permission_id`)
+SELECT r.id, p.id FROM `sys_role` r CROSS JOIN `sys_permission` p
+WHERE r.`code` = 'ADMIN' AND (p.`code` = 'menu:role' OR p.`code` LIKE 'role:%' OR p.`code` LIKE 'api:role:%');
+
+-- USER 仅绑定角色查看
+INSERT INTO `sys_role_permission` (`role_id`, `permission_id`)
+SELECT r.id, p.id FROM `sys_role` r CROSS JOIN `sys_permission` p
+WHERE r.`code` = 'USER' AND p.`code` IN ('menu:role', 'role:view', 'api:role:list');
+
+-- ============================================================================
+-- 权限管理权限（仅 ADMIN 拥有全部）
+-- ============================================================================
+INSERT INTO `sys_permission` (`parent_id`, `code`, `name`, `type`, `path`, `component`, `icon`, `sort`) VALUES
+    (0, 'menu:permission', '权限管理', 1, '/permission', 'permission-list/index', 'key', 40);
+SET @permMenuId = LAST_INSERT_ID();
+INSERT INTO `sys_permission` (`parent_id`, `code`, `name`, `type`, `path`, `component`, `icon`, `sort`) VALUES
+    (@permMenuId, 'permission:view',   '查看', 2, NULL, NULL, NULL, 1),
+    (@permMenuId, 'permission:create', '新增', 2, NULL, NULL, NULL, 2),
+    (@permMenuId, 'permission:update', '编辑', 2, NULL, NULL, NULL, 3),
+    (@permMenuId, 'permission:delete', '删除', 2, NULL, NULL, NULL, 4),
+    (0, 'api:permission:list',   '权限列表接口', 3, NULL, NULL, NULL, 1),
+    (0, 'api:permission:create', '权限创建接口', 3, NULL, NULL, NULL, 2),
+    (0, 'api:permission:update', '权限更新接口', 3, NULL, NULL, NULL, 3),
+    (0, 'api:permission:delete', '权限删除接口', 3, NULL, NULL, NULL, 4);
+
+-- ADMIN 绑定全部权限管理权限
+INSERT INTO `sys_role_permission` (`role_id`, `permission_id`)
+SELECT r.id, p.id FROM `sys_role` r CROSS JOIN `sys_permission` p
+WHERE r.`code` = 'ADMIN' AND (p.`code` = 'menu:permission' OR p.`code` LIKE 'permission:%' OR p.`code` LIKE 'api:permission:%');
+
+-- USER 绑定 user:assign-role 权限（用户管理-分配角色）
+INSERT INTO `sys_permission` (`parent_id`, `code`, `name`, `type`, `path`, `component`, `icon`, `sort`) VALUES
+    ((SELECT id FROM sys_permission WHERE code = 'menu:user' LIMIT 1), 'user:assign-role', '分配角色', 2, NULL, NULL, NULL, 5);
+INSERT INTO `sys_role_permission` (`role_id`, `permission_id`)
+SELECT r.id, p.id FROM `sys_role` r CROSS JOIN `sys_permission` p
+WHERE r.`code` = 'ADMIN' AND p.`code` = 'user:assign-role';

@@ -5,9 +5,9 @@
  */
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Card, Popconfirm, Space, Table, Tag, Typography, message, type TableColumnsType } from 'antd';
+import { Button, Card, Modal, Popconfirm, Select, Space, Table, Tag, Typography, message, type TableColumnsType } from 'antd';
 import { useTranslation } from 'react-i18next';
-import type { PageResult, User } from '@fs/types';
+import type { PageResult, Role, User } from '@fs/types';
 import { fs } from '@/request';
 import { PermissionGuard, withPermission } from '@/components/permission';
 
@@ -19,6 +19,7 @@ const EditButton = withPermission<User>({
   // 业务条件：仅启用状态的用户可编辑（与后端独立鉴权并存，这里只控制界面入口）
   customFn: (_, record) => record?.status === 1,
 })(Button);
+const AssignRoleButton = withPermission({ codes: ['user:assign-role'], fallback: 'disable' })(Button);
 const DeleteConfirm = withPermission({ codes: ['user:delete'] })(Popconfirm);
 
 export default function UserListPage() {
@@ -31,6 +32,12 @@ export default function UserListPage() {
     pageSize: 10,
   });
   const [loading, setLoading] = useState(false);
+
+  // 分配角色弹窗
+  const [roleOpen, setRoleOpen] = useState(false);
+  const [roleUser, setRoleUser] = useState<User | null>(null);
+  const [roleIds, setRoleIds] = useState<number[]>([]);
+  const [roleOptions, setRoleOptions] = useState<Role[]>([]);
 
   // 后端 PageQuery 参数为 page/size（pageNum/pageSize 会被忽略导致翻页失效）
   const reload = (page = 1, size = 10) => {
@@ -48,6 +55,25 @@ export default function UserListPage() {
     fs.delete<void>(`/user/${record.id}`).then(() => {
       message.success(t('user.deleteSuccess'));
       reload(data.pageNum, data.pageSize);
+    });
+  };
+
+  const onAssignRole = (record: User) => {
+    setRoleUser(record);
+    Promise.all([fs.get<Role[]>('/role/all'), fs.get<number[]>(`/user/${record.id}/roles`)]).then(
+      ([roles, ids]) => {
+        setRoleOptions(roles);
+        setRoleIds(ids);
+        setRoleOpen(true);
+      },
+    );
+  };
+
+  const onSaveRole = () => {
+    if (!roleUser) return;
+    fs.put<void>(`/user/${roleUser.id}/roles`, roleIds).then(() => {
+      message.success(t('user.saveSuccess'));
+      setRoleOpen(false);
     });
   };
 
@@ -81,6 +107,9 @@ export default function UserListPage() {
           <EditButton extra={record} size="small" onClick={() => navigate(`/user/edit/${record.id}`)}>
             {t('common.edit')}
           </EditButton>
+          <AssignRoleButton size="small" onClick={() => onAssignRole(record)}>
+            {t('user.assignRole')}
+          </AssignRoleButton>
           <DeleteConfirm
             title={t('user.deleteConfirm')}
             okText={t('common.confirm')}
@@ -122,6 +151,24 @@ export default function UserListPage() {
           onChange: (page, pageSize) => reload(page, pageSize),
         }}
       />
+
+      {/* 分配角色弹窗 */}
+      <Modal
+        title={roleUser ? t('user.assignRoleTitle', { name: roleUser.nickname || roleUser.username }) : ''}
+        open={roleOpen}
+        onOk={onSaveRole}
+        onCancel={() => setRoleOpen(false)}
+        destroyOnClose
+      >
+        <Select
+          mode="multiple"
+          style={{ width: '100%' }}
+          placeholder={t('user.roles')}
+          value={roleIds}
+          onChange={(v) => setRoleIds(v as number[])}
+          options={roleOptions.map((r) => ({ value: r.id, label: `${r.name} (${r.code})` }))}
+        />
+      </Modal>
     </Card>
   );
 }

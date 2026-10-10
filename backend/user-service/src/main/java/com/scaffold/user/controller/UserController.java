@@ -101,4 +101,19 @@ public class UserController {
     public Result<Void> delete(@PathVariable Long id) {
         return userService.deleteById(id) ? Result.success() : Result.fail(com.scaffold.common.api.ResultCode.FAIL);
     }
+
+    @GetMapping("/{id}/roles")
+    @Operation(summary = "查询用户已分配的角色 id 列表")
+    @RequirePermission("user:assign-role")
+    public Result<List<Long>> listRoles(@PathVariable("id") Long userId) {
+        return Result.success(userService.listRoleIds(userId));
+    }
+
+    @PutMapping("/{id}/roles")
+    @Operation(summary = "为用户分配角色（全量替换）")
+    @RequirePermission("user:assign-role")
+    public Result<Void> assignRoles(@PathVariable("id") Long userId, @RequestBody List<Long> roleIds) {
+        userService.assignRoles(userId, roleIds);
+        return Result.success();
+    }
 }

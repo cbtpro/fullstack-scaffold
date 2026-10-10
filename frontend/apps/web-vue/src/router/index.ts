@@ -38,6 +38,18 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'menu.device', permission: 'menu:device' },
         component: () => import('@/pages/device-list/index.vue'),
       },
+      {
+        path: 'role',
+        name: 'role',
+        meta: { title: 'menu.role', permission: 'menu:role' },
+        component: () => import('@/pages/role-list/index.vue'),
+      },
+      {
+        path: 'permission',
+        name: 'permission',
+        meta: { title: 'menu.permission', permission: 'menu:permission' },
+        component: () => import('@/pages/permission-list/index.vue'),
+      },
       // 用户新建/详情/编辑共用三态页，模式由路由名派生；
       // 详情/编辑标题按记录 id 生成，同一路由打开多条记录时各自成标签
       {

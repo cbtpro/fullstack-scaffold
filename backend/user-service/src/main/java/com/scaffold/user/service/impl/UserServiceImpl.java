@@ -10,12 +10,14 @@ import com.scaffold.common.api.ResultCode;
 import com.scaffold.common.exception.BizException;
 import com.scaffold.user.entity.User;
 import com.scaffold.user.mapper.UserMapper;
+import com.scaffold.user.mapper.UserRoleMapper;
 import com.scaffold.user.service.RbacService;
 import com.scaffold.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
@@ -36,6 +38,7 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final RbacService rbacService;
+    private final UserRoleMapper userRoleMapper;
 
     @Override
     public PageResult<User> page(PageQuery query, String keyword) {
@@ -97,6 +100,26 @@ public class UserServiceImpl implements UserService {
     @Override
     public boolean deleteById(Long id) {
         return userMapper.deleteById(id) > 0;
+    }
+
+    @Override
+    public List<Long> listRoleIds(Long userId) {
+        if (userId == null) {
+            return Collections.emptyList();
+        }
+        return userRoleMapper.selectRoleIdsByUserId(userId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void assignRoles(Long userId, List<Long> roleIds) {
+        if (userId == null) {
+            return;
+        }
+        userRoleMapper.deleteByUserId(userId);
+        if (roleIds != null && !roleIds.isEmpty()) {
+            userRoleMapper.batchInsert(userId, roleIds);
+        }
     }
 
     @Override
