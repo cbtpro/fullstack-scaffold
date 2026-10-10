@@ -1,5 +1,6 @@
 package com.scaffold.auth.jwt;
 
+import com.scaffold.auth.AuthProperties;
 import com.scaffold.common.api.ResultCode;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
@@ -29,10 +30,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class JwtSecurityConfig {
 
     /**
-     * 放行路径：登录、OpenAPI 文档、静态资源。
+     * 放行路径：登录、验证码、OpenAPI 文档、静态资源。
      */
     private static final String[] PERMIT_PATHS = {
             "/api/auth/login",
+            "/api/auth/captcha",
             "/actuator/**",
             "/doc.html",
             "/swagger-ui/**",
@@ -67,7 +69,7 @@ public class JwtSecurityConfig {
     }
 
     @Bean
-    public JwtAuthFilter jwtAuthFilter(JwtAuthManager jwtAuthManager) {
-        return new JwtAuthFilter(jwtAuthManager);
+    public JwtAuthFilter jwtAuthFilter(JwtAuthManager jwtAuthManager, AuthProperties authProperties) {
+        return new JwtAuthFilter(jwtAuthManager, authProperties);
     }
 }

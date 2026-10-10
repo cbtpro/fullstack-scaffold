@@ -2,6 +2,7 @@ package com.scaffold.gateway.filter;
 
 import com.scaffold.auth.AuthManager;
 import com.scaffold.auth.AuthProperties;
+import com.scaffold.auth.device.DeviceBindingMatcher;
 import com.scaffold.auth.model.UserInfo;
 import com.scaffold.common.api.ResultCode;
 import com.scaffold.common.exception.BizException;
@@ -41,6 +42,7 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
 
     private static final String[] PERMIT_PATHS = {
             "/api/auth/login",
+            "/api/auth/captcha",
             "/api/auth/logout",
             "/doc.html",
             "/swagger-ui",
@@ -75,6 +77,12 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
 
         try {
             UserInfo user = authManager.getLoginUser(token);
+            // 设备指纹绑定校验：token 内指纹与请求头不一致视为会话被盗用
+            String requestFingerprint = exchange.getRequest().getHeaders()
+                    .getFirst(authProperties.getDevice().getFingerprintHeader());
+            if (!DeviceBindingMatcher.matches(authProperties, user, requestFingerprint)) {
+                return unauthorized(exchange, "设备指纹校验失败，请重新登录");
+            }
             ServerHttpRequest mutated = exchange.getRequest().mutate()
                     .header(USER_ID_HEADER, String.valueOf(user.getId()))
                     .header(USERNAME_HEADER, user.getUsername() == null ? "" : user.getUsername())

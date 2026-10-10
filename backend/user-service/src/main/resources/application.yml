@@ -55,6 +55,14 @@ sa-token:
   is-log: false
   token-style: uuid
 
+# 图形验证码（captcha-starter）：默认 Redis 缓存，无 Redis 可切 memory
+captcha:
+  enabled: true
+  code-mode: random
+  cache-mode: redis
+  length: 6
+  ttl-minutes: 2
+
 # OpenAPI / Knife4j
 springdoc:
   swagger-ui:

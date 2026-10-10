@@ -14,6 +14,7 @@
     <modules>
         <module>common</module>
         <module>auth-starter</module>
+        <module>captcha-starter</module>
         <module>gateway-service</module>
         <module>user-service</module>
     </modules>
@@ -79,6 +80,11 @@
             <dependency>
                 <groupId>com.scaffold</groupId>
                 <artifactId>auth-starter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.scaffold</groupId>
+                <artifactId>captcha-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

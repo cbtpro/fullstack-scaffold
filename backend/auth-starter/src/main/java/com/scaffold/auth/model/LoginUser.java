@@ -56,4 +56,10 @@ public class LoginUser implements Serializable {
 
     /** 过期时间戳（毫秒） */
     private Long expireAt;
+
+    /** 绑定的设备标识，由 LoginTokenEnhancer 扩展点在签发前回填，写入 token claims */
+    private String deviceId;
+
+    /** 绑定的设备指纹，与请求头 X-Device-Fp 比对实现 token 与设备绑定 */
+    private String deviceFingerprint;
 }

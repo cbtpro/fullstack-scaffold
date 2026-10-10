@@ -1,5 +1,6 @@
 package com.scaffold.user;
 
+import org.apache.ibatis.annotations.Mapper;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -20,7 +21,8 @@ import org.springframework.boot.autoconfigure.security.servlet.UserDetailsServic
         SecurityAutoConfiguration.class,
         UserDetailsServiceAutoConfiguration.class
 })
-@MapperScan("com.scaffold.user.mapper")
+// 按注解扫描 Mapper：新增子包（如 device）下的 Mapper 接口无需回改此处
+@MapperScan(basePackages = "com.scaffold.user", annotationClass = Mapper.class)
 public class UserServiceApplication {
 
     public static void main(String[] args) {

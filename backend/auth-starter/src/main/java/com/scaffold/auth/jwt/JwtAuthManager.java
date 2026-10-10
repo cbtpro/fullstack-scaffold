@@ -3,6 +3,7 @@ package com.scaffold.auth.jwt;
 import com.scaffold.auth.AuthManager;
 import com.scaffold.auth.AuthProperties;
 import com.scaffold.auth.AuthUserLoader;
+import com.scaffold.auth.LoginTokenEnhancer;
 import com.scaffold.auth.model.LoginRequest;
 import com.scaffold.auth.model.LoginResult;
 import com.scaffold.auth.model.LoginUser;
@@ -39,12 +40,17 @@ public class JwtAuthManager implements AuthManager {
 
     private final AuthProperties props;
     private final ObjectProvider<AuthUserLoader> loaderProvider;
+    private final ObjectProvider<LoginTokenEnhancer> enhancerProvider;
     private final PasswordEncoder encoder;
     private final SecretKey key;
 
-    public JwtAuthManager(AuthProperties props, ObjectProvider<AuthUserLoader> loaderProvider, PasswordEncoder encoder) {
+    public JwtAuthManager(AuthProperties props,
+                          ObjectProvider<AuthUserLoader> loaderProvider,
+                          ObjectProvider<LoginTokenEnhancer> enhancerProvider,
+                          PasswordEncoder encoder) {
         this.props = props;
         this.loaderProvider = loaderProvider;
+        this.enhancerProvider = enhancerProvider;
         this.encoder = encoder;
         byte[] keyBytes = props.getJwt().getSecret().getBytes(StandardCharsets.UTF_8);
         this.key = Keys.hmacShaKeyFor(keyBytes);
@@ -63,6 +69,11 @@ public class JwtAuthManager implements AuthManager {
         if (user.getPassword() == null || !encoder.matches(req.getPassword(), user.getPassword())) {
             throw new BizException(ResultCode.UNAUTHORIZED, "密码错误");
         }
+        // 签发前扩展点：设备登记/风控校验等由实现方完成，无实现时跳过
+        LoginTokenEnhancer enhancer = enhancerProvider.getIfAvailable();
+        if (enhancer != null) {
+            enhancer.enhance(user, req);
+        }
         return LoginResult.of(sign(user));
     }
 
@@ -71,7 +82,7 @@ public class JwtAuthManager implements AuthManager {
         long expireMs = props.getJwt().getExpireMinutes() * 60_000L;
         Date expire = new Date(now.getTime() + expireMs);
 
-        String token = Jwts.builder()
+        var builder = Jwts.builder()
                 .subject(String.valueOf(user.getId()))
                 .claim("id", user.getId())
                 .claim("username", user.getUsername())
@@ -83,9 +94,15 @@ public class JwtAuthManager implements AuthManager {
                 .claim("roles", user.getRoles())
                 .claim("permissions", user.getPermissions())
                 .issuedAt(now)
-                .expiration(expire)
-                .signWith(key, Jwts.SIG.HS256)
-                .compact();
+                .expiration(expire);
+        // 设备绑定 claims：登录时上报指纹并由扩展点回填后才写入
+        if (user.getDeviceId() != null) {
+            builder.claim("deviceId", user.getDeviceId());
+        }
+        if (user.getDeviceFingerprint() != null) {
+            builder.claim("deviceFingerprint", user.getDeviceFingerprint());
+        }
+        String token = builder.signWith(key, Jwts.SIG.HS256).compact();
 
         user.setToken(token);
         user.setExpireAt(expire.getTime());
@@ -106,6 +123,8 @@ public class JwtAuthManager implements AuthManager {
         user.setStatus(claims.get("status", Integer.class));
         user.setRoles(claims.get("roles", java.util.List.class));
         user.setPermissions(claims.get("permissions", java.util.List.class));
+        user.setDeviceId(claims.get("deviceId", String.class));
+        user.setDeviceFingerprint(claims.get("deviceFingerprint", String.class));
         user.setToken(token);
         user.setExpireAt(claims.getExpiration() != null ? claims.getExpiration().getTime() : null);
         if (claims.getIssuedAt() != null) {

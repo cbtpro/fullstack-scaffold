@@ -23,6 +23,8 @@ public enum ResultCode {
     FORBIDDEN(40003L, "无访问权限"),
     /** 资源不存在 */
     NOT_FOUND(40004L, "资源不存在"),
+    /** 验证码错误或已过期 */
+    CAPTCHA_INVALID(40005L, "验证码错误或已过期"),
 
     /** 服务端内部错误 */
     INTERNAL_ERROR(50000L, "服务内部错误"),

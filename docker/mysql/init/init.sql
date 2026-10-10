@@ -117,3 +117,21 @@ SELECT u.id, r.id FROM `user` u CROSS JOIN `sys_role` r WHERE u.`username` = 'ad
 -- guest 用户绑定 USER 角色
 INSERT INTO `sys_user_role` (`user_id`, `role_id`)
 SELECT u.id, r.id FROM `user` u CROSS JOIN `sys_role` r WHERE u.`username` = 'guest' AND r.`code` = 'USER';
+
+-- ============================================================================
+-- 登录设备表：token 与设备指纹绑定（登录时登记，请求时比对 X-Device-Fp）
+-- 后续"可信登录列表"按 risk_level / 新表白名单在 TrustedDevicePolicy 处扩展
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS `user_device` (
+    `id`              BIGINT      NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `user_id`         BIGINT      NOT NULL COMMENT '用户 id',
+    `device_id`       VARCHAR(64) NOT NULL COMMENT '设备标识（UUID），token claims 携带',
+    `fingerprint`     CHAR(64)    NOT NULL COMMENT '设备指纹（sha256 hex）',
+    `ip`              VARCHAR(64) DEFAULT NULL COMMENT '最近登录 IP',
+    `risk_level`      VARCHAR(16) NOT NULL DEFAULT 'NORMAL' COMMENT '风险等级：TRUSTED/NORMAL/RISKY/REVOKED',
+    `last_login_time` DATETIME    DEFAULT NULL COMMENT '最近登录时间',
+    `create_time`     DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_device_id` (`device_id`),
+    UNIQUE KEY `uk_user_fp` (`user_id`, `fingerprint`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='登录设备表';

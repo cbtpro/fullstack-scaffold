@@ -31,6 +31,12 @@
             <artifactId>auth-starter</artifactId>
         </dependency>
 
+        <!-- 验证码 Starter：三层 Bean（生成/渲染/缓存），默认 Redis 缓存 -->
+        <dependency>
+            <groupId>com.scaffold</groupId>
+            <artifactId>captcha-starter</artifactId>
+        </dependency>
+
         <!-- Sa-Token：仅 auth.type=SA_TOKEN 时启用。
              不在此引入也可，按需手动加，或通过 profile 切换。
              为演示双鉴权可切换，默认引入（JWT 模式下 Bean 不装配，依赖无副作用）。 -->

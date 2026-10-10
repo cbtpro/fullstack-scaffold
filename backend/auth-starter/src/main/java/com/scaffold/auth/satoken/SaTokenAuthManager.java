@@ -5,6 +5,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.scaffold.auth.AuthManager;
 import com.scaffold.auth.AuthProperties;
 import com.scaffold.auth.AuthUserLoader;
+import com.scaffold.auth.LoginTokenEnhancer;
 import com.scaffold.auth.model.LoginRequest;
 import com.scaffold.auth.model.LoginResult;
 import com.scaffold.auth.model.LoginUser;
@@ -32,11 +33,16 @@ public class SaTokenAuthManager implements AuthManager {
 
     private final AuthProperties props;
     private final ObjectProvider<AuthUserLoader> loaderProvider;
+    private final ObjectProvider<LoginTokenEnhancer> enhancerProvider;
     private final PasswordEncoder encoder;
 
-    public SaTokenAuthManager(AuthProperties props, ObjectProvider<AuthUserLoader> loaderProvider, PasswordEncoder encoder) {
+    public SaTokenAuthManager(AuthProperties props,
+                              ObjectProvider<AuthUserLoader> loaderProvider,
+                              ObjectProvider<LoginTokenEnhancer> enhancerProvider,
+                              PasswordEncoder encoder) {
         this.props = props;
         this.loaderProvider = loaderProvider;
+        this.enhancerProvider = enhancerProvider;
         this.encoder = encoder;
     }
 
@@ -52,6 +58,11 @@ public class SaTokenAuthManager implements AuthManager {
         }
         if (user.getPassword() == null || !encoder.matches(req.getPassword(), user.getPassword())) {
             throw new BizException(ResultCode.UNAUTHORIZED, "密码错误");
+        }
+        // 签发前扩展点：与 JWT 实现同口径，设备登记/风控校验由实现方完成
+        LoginTokenEnhancer enhancer = enhancerProvider.getIfAvailable();
+        if (enhancer != null) {
+            enhancer.enhance(user, req);
         }
 
         SaLoginModel loginModel = new SaLoginModel();

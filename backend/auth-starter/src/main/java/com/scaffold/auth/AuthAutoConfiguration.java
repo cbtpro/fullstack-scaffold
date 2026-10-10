@@ -52,8 +52,9 @@ public class AuthAutoConfiguration {
     @ConditionalOnClass(BCryptPasswordEncoder.class)
     public JwtAuthManager jwtAuthManager(AuthProperties props,
                                          ObjectProvider<AuthUserLoader> loaderProvider,
+                                         ObjectProvider<LoginTokenEnhancer> enhancerProvider,
                                          PasswordEncoder encoder) {
-        return new JwtAuthManager(props, loaderProvider, encoder);
+        return new JwtAuthManager(props, loaderProvider, enhancerProvider, encoder);
     }
 
     /**
@@ -64,7 +65,8 @@ public class AuthAutoConfiguration {
     @ConditionalOnClass(StpUtil.class)
     public SaTokenAuthManager saTokenAuthManager(AuthProperties props,
                                                  ObjectProvider<AuthUserLoader> loaderProvider,
+                                                 ObjectProvider<LoginTokenEnhancer> enhancerProvider,
                                                  PasswordEncoder encoder) {
-        return new SaTokenAuthManager(props, loaderProvider, encoder);
+        return new SaTokenAuthManager(props, loaderProvider, enhancerProvider, encoder);
     }
 }

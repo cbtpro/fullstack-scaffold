@@ -40,6 +40,12 @@ public class UserInfo implements Serializable {
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 
+    /** 绑定的设备标识（token claims 还原，供网关/过滤器做设备绑定校验） */
+    private String deviceId;
+
+    /** 绑定的设备指纹 */
+    private String deviceFingerprint;
+
     /**
      * 从 {@link LoginUser} 构建只读用户信息，剥离敏感字段。
      */
@@ -59,6 +65,8 @@ public class UserInfo implements Serializable {
         info.status = source.getStatus();
         info.createTime = source.getCreateTime();
         info.updateTime = source.getUpdateTime();
+        info.deviceId = source.getDeviceId();
+        info.deviceFingerprint = source.getDeviceFingerprint();
         return info;
     }
 }
