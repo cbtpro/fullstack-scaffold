@@ -32,6 +32,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'menu.user', permission: 'menu:user' },
         component: () => import('@/pages/user-list/index.vue'),
       },
+      {
+        path: 'device',
+        name: 'device',
+        meta: { title: 'menu.device', permission: 'menu:device' },
+        component: () => import('@/pages/device-list/index.vue'),
+      },
       // 用户新建/详情/编辑共用三态页，模式由路由名派生；
       // 详情/编辑标题按记录 id 生成，同一路由打开多条记录时各自成标签
       {

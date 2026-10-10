@@ -4,7 +4,7 @@
  * 此组件按名称映射到 lucide 图标，供 antd-vue Menu 的 icon 属性使用。
  */
 import { defineComponent, h, type Component } from 'vue';
-import { House, Settings, User, Users } from 'lucide-vue-next';
+import { House, Settings, Smartphone, User, Users } from 'lucide-vue-next';
 
 /** 后端图标名 → lucide 图标组件（新增图标在此登记即可） */
 const ICON_MAP: Record<string, Component> = {
@@ -12,6 +12,7 @@ const ICON_MAP: Record<string, Component> = {
   team: Users,
   user: User,
   setting: Settings,
+  smartphone: Smartphone,
 };
 
 /**

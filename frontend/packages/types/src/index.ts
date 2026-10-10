@@ -85,6 +85,21 @@ export interface PageResult<T = unknown> {
   pageSize: number;
 }
 
+/** 设备风险等级，对应后端 RiskLevel 枚举名。 */
+export type DeviceRiskLevel = 'TRUSTED' | 'NORMAL' | 'RISKY' | 'REVOKED';
+
+/** 登录设备，对应后端 user_device 表记录。 */
+export interface UserDevice {
+  id: number;
+  userId: number;
+  deviceId: string;
+  fingerprint: string;
+  ip?: string;
+  riskLevel: DeviceRiskLevel;
+  lastLoginTime?: string;
+  createTime?: string;
+}
+
 /** 分页查询参数，对应 {@code com.scaffold.common.PageQuery}。 */
 export interface PageQuery {
   pageNum: number;

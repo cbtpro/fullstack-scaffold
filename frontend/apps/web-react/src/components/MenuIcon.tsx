@@ -4,7 +4,7 @@
  * 此组件按名称映射到 lucide 图标，供 antd Menu 的 icon 属性使用。
  */
 import type { ComponentType, ReactNode } from 'react';
-import { House, Settings, User, Users } from 'lucide-react';
+import { House, Settings, Smartphone, User, Users } from 'lucide-react';
 
 type LucideIcon = ComponentType<{ size?: number | string; className?: string }>;
 
@@ -14,6 +14,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   team: Users,
   user: User,
   setting: Settings,
+  smartphone: Smartphone,
 };
 
 /**
