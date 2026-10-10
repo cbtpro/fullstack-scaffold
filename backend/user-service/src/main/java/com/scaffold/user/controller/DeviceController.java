@@ -35,10 +35,10 @@ public class DeviceController {
     private final DeviceService deviceService;
 
     @GetMapping("/list")
-    @Operation(summary = "分页查询当前用户设备")
+    @Operation(summary = "分页查询当前用户设备，支持关键词搜索")
     @RequirePermission("api:device:list")
-    public Result<PageResult<UserDevice>> page(PageQuery query, HttpServletRequest request) {
-        return Result.success(deviceService.page(query, resolveUserId(request)));
+    public Result<PageResult<UserDevice>> page(PageQuery query, String keyword, HttpServletRequest request) {
+        return Result.success(deviceService.page(query, resolveUserId(request), keyword));
     }
 
     @PutMapping("/{id}/trust")

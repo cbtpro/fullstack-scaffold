@@ -9,13 +9,14 @@ import com.scaffold.common.api.PageResult;
 public interface DeviceService {
 
     /**
-     * 分页查询指定用户的登录设备。
+     * 分页查询指定用户的登录设备，支持按关键词模糊搜索。
      *
-     * @param query  分页参数
-     * @param userId 用户 id
+     * @param query   分页参数
+     * @param userId   用户 id
+     * @param keyword  关键词（模糊匹配 deviceId / fingerprint / ip），可为 null
      * @return 设备分页结果
      */
-    PageResult<UserDevice> page(PageQuery query, Long userId);
+    PageResult<UserDevice> page(PageQuery query, Long userId, String keyword);
 
     /**
      * 将设备标记为可信。

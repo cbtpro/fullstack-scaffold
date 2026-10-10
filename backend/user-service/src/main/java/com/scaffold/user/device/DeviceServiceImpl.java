@@ -22,11 +22,16 @@ public class DeviceServiceImpl implements DeviceService {
     private final UserDeviceMapper deviceMapper;
 
     @Override
-    public PageResult<UserDevice> page(PageQuery query, Long userId) {
+    public PageResult<UserDevice> page(PageQuery query, Long userId, String keyword) {
         Page<UserDevice> page = new Page<>(query.getPage(), query.getSize());
         LambdaQueryWrapper<UserDevice> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(UserDevice::getUserId, userId)
-                .orderByDesc(UserDevice::getLastLoginTime);
+        wrapper.eq(UserDevice::getUserId, userId);
+        if (keyword != null && !keyword.isBlank()) {
+            wrapper.and(w -> w.like(UserDevice::getDeviceId, keyword)
+                    .or().like(UserDevice::getFingerprint, keyword)
+                    .or().like(UserDevice::getIp, keyword));
+        }
+        wrapper.orderByDesc(UserDevice::getLastLoginTime);
         IPage<UserDevice> result = deviceMapper.selectPage(page, wrapper);
         return new PageResult<>(result.getTotal(), result.getCurrent(), result.getSize(), result.getRecords());
     }
