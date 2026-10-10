@@ -9,6 +9,7 @@ import com.scaffold.common.api.ResultCode;
 import com.scaffold.common.exception.BizException;
 import com.scaffold.user.entity.Role;
 import com.scaffold.user.mapper.RoleMapper;
+import com.scaffold.user.mapper.RolePermissionGroupMapper;
 import com.scaffold.user.mapper.RolePermissionMapper;
 import com.scaffold.user.service.RoleService;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class RoleServiceImpl implements RoleService {
 
     private final RoleMapper roleMapper;
     private final RolePermissionMapper rolePermissionMapper;
+    private final RolePermissionGroupMapper rolePermissionGroupMapper;
 
     @Override
     public PageResult<Role> page(PageQuery query, String keyword) {
@@ -88,6 +90,7 @@ public class RoleServiceImpl implements RoleService {
     @Transactional(rollbackFor = Exception.class)
     public boolean deleteById(Long id) {
         rolePermissionMapper.deleteByRoleId(id);
+        rolePermissionGroupMapper.deleteByRoleId(id);
         return roleMapper.deleteById(id) > 0;
     }
 
@@ -106,6 +109,24 @@ public class RoleServiceImpl implements RoleService {
         rolePermissionMapper.deleteByRoleId(roleId);
         if (permissionIds != null && !permissionIds.isEmpty()) {
             rolePermissionMapper.batchInsert(roleId, permissionIds);
+        }
+    }
+
+    @Override
+    public List<Long> listGroupIds(Long roleId) {
+        if (roleId == null) {
+            return Collections.emptyList();
+        }
+        return rolePermissionGroupMapper.selectGroupIdsByRoleId(roleId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void assignGroups(Long roleId, List<Long> groupIds) {
+        getById(roleId);
+        rolePermissionGroupMapper.deleteByRoleId(roleId);
+        if (groupIds != null && !groupIds.isEmpty()) {
+            rolePermissionGroupMapper.batchInsert(roleId, groupIds);
         }
     }
 

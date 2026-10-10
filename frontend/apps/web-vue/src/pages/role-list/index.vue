@@ -29,6 +29,9 @@
             <Permission codes="role:assign" fallback="disable">
               <a-button size="small" @click="onAssign(record)">{{ t('role.assignPermission') }}</a-button>
             </Permission>
+            <Permission codes="role:assign-group" fallback="disable">
+              <a-button size="small" @click="onAssignGroup(record)">{{ t('role.assignGroup') }}</a-button>
+            </Permission>
             <Permission codes="role:delete">
               <a-popconfirm
                 :title="t('role.deleteConfirm')"
@@ -88,17 +91,35 @@
         default-expand-all
       />
     </a-modal>
+
+    <!-- 分配权限组弹窗 -->
+    <a-modal
+      :title="groupRole ? t('role.assignGroupTitle', { name: groupRole.name }) : ''"
+      v-model:open="groupOpen"
+      @ok="onSaveGroup"
+      width="520px"
+      destroy-on-close
+    >
+      <a-select
+        mode="multiple"
+        v-model:value="groupCheckedIds"
+        :options="groupOptions"
+        :placeholder="t('role.assignGroup')"
+        allow-clear
+        style="width: 100%"
+      />
+    </a-modal>
   </a-card>
 </template>
 
 <script setup lang="ts">
 /**
- * 角色管理页：列表 + 新增/编辑弹窗 + 分配权限弹窗。
+ * 角色管理页：列表 + 新增/编辑弹窗 + 分配权限弹窗 + 分配权限组弹窗。
  */
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { message } from 'ant-design-vue';
-import type { PageResult, Permission as PermissionItem, Role } from '@fs/types';
+import type { PageResult, Permission as PermissionItem, PermissionGroup, Role } from '@fs/types';
 import { fs } from '@/request';
 import Permission from '@/components/permission/Permission.vue';
 
@@ -116,7 +137,17 @@ const permRole = ref<Role | null>(null);
 const allPerms = ref<PermissionItem[]>([]);
 const checkedKeys = ref<(string | number)[]>([]);
 
+// 分配权限组相关状态
+const groupOpen = ref(false);
+const groupRole = ref<Role | null>(null);
+const allGroups = ref<PermissionGroup[]>([]);
+const groupCheckedIds = ref<number[]>([]);
+
 const treeData = computed(() => buildTree(allPerms.value));
+
+const groupOptions = computed(() =>
+  allGroups.value.map((g) => ({ label: `${g.name} (${g.code})`, value: g.id })),
+);
 
 const columns = computed(() => [
   { title: 'ID', dataIndex: 'id', width: 80 },
@@ -126,7 +157,7 @@ const columns = computed(() => [
   { title: t('role.description'), dataIndex: 'description', customRender: ({ record }: any) => record.description ?? '-' },
   { title: t('role.status'), dataIndex: 'status', width: 90 },
   { title: t('role.createTime'), dataIndex: 'createTime', width: 180 },
-  { title: t('common.operation'), key: '__op', width: 240 },
+  { title: t('common.operation'), key: '__op', width: 320 },
 ]);
 
 const pagination = computed(() => ({
@@ -221,6 +252,28 @@ function onSavePerm() {
   fs.put<void>(`/role/${permRole.value.id}/permissions`, checkedKeys.value).then(() => {
     message.success(t('role.assignSuccess'));
     permOpen.value = false;
+  });
+}
+
+/** 打开分配权限组弹窗：拉取全部权限组与当前角色已绑定的权限组 */
+function onAssignGroup(record: Role) {
+  groupRole.value = record;
+  groupCheckedIds.value = [];
+  fs.get<PermissionGroup[]>('/permission-group/all').then((groups) => {
+    allGroups.value = groups;
+    fs.get<number[]>(`/role/${record.id}/groups`).then((ids) => {
+      groupCheckedIds.value = ids;
+      groupOpen.value = true;
+    });
+  });
+}
+
+/** 保存角色与权限组的绑定关系 */
+function onSaveGroup() {
+  if (!groupRole.value) return;
+  fs.put<void>(`/role/${groupRole.value.id}/groups`, groupCheckedIds.value).then(() => {
+    message.success(t('role.assignGroupSuccess'));
+    groupOpen.value = false;
   });
 }
 

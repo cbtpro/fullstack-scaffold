@@ -217,3 +217,73 @@ INSERT INTO `sys_permission` (`parent_id`, `code`, `name`, `type`, `path`, `comp
 INSERT INTO `sys_role_permission` (`role_id`, `permission_id`)
 SELECT r.id, p.id FROM `sys_role` r CROSS JOIN `sys_permission` p
 WHERE r.`code` = 'ADMIN' AND p.`code` = 'user:assign-role';
+
+-- ============================================================================
+-- 权限组：将一组权限打包成可复用单元，角色动态绑定后自动同步组内权限
+-- 角色 → sys_role_permission_group → sys_permission_group_item → sys_permission
+-- 解析时与 sys_role_permission 取并集去重（见 PermissionMapper.selectByUserId）
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS `sys_permission_group` (
+    `id`          BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `code`        VARCHAR(64)  NOT NULL COMMENT '权限组编码（业务唯一）',
+    `name`        VARCHAR(64)  NOT NULL COMMENT '显示名',
+    `description` VARCHAR(255) DEFAULT NULL COMMENT '描述',
+    `sort`        INT          NOT NULL DEFAULT 0 COMMENT '排序',
+    `status`      TINYINT      NOT NULL DEFAULT 1 COMMENT '状态：1启用 0禁用',
+    `create_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `deleted`     TINYINT      NOT NULL DEFAULT 0 COMMENT '逻辑删除：0未删 1已删',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_group_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='权限组表';
+
+-- 权限组-权限关联
+CREATE TABLE IF NOT EXISTS `sys_permission_group_item` (
+    `id`            BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `group_id`      BIGINT NOT NULL COMMENT '权限组 id',
+    `permission_id` BIGINT NOT NULL COMMENT '权限 id',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_group_perm` (`group_id`, `permission_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='权限组-权限关联';
+
+-- 角色-权限组关联（动态绑定：角色关联组后，解析时 UNION 组内权限）
+CREATE TABLE IF NOT EXISTS `sys_role_permission_group` (
+    `id`       BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `role_id`  BIGINT NOT NULL COMMENT '角色 id',
+    `group_id` BIGINT NOT NULL COMMENT '权限组 id',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_role_group` (`role_id`, `group_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='角色-权限组关联';
+
+-- ============================================================================
+-- 权限组管理权限（仅 ADMIN 拥有全部）
+-- ============================================================================
+INSERT INTO `sys_permission` (`parent_id`, `code`, `name`, `type`, `path`, `component`, `icon`, `sort`) VALUES
+    (0, 'menu:permission-group', '权限组管理', 1, '/permission-group', 'permission-group-list/index', 'layers', 50);
+SET @groupMenuId = LAST_INSERT_ID();
+INSERT INTO `sys_permission` (`parent_id`, `code`, `name`, `type`, `path`, `component`, `icon`, `sort`) VALUES
+    (@groupMenuId, 'permission-group:view',   '查看',     2, NULL, NULL, NULL, 1),
+    (@groupMenuId, 'permission-group:create', '新增',     2, NULL, NULL, NULL, 2),
+    (@groupMenuId, 'permission-group:update', '编辑',     2, NULL, NULL, NULL, 3),
+    (@groupMenuId, 'permission-group:delete', '删除',     2, NULL, NULL, NULL, 4),
+    (@groupMenuId, 'permission-group:assign',  '分配权限', 2, NULL, NULL, NULL, 5),
+    (0, 'api:permission-group:list',   '权限组列表接口',     3, NULL, NULL, NULL, 1),
+    (0, 'api:permission-group:create', '权限组创建接口',     3, NULL, NULL, NULL, 2),
+    (0, 'api:permission-group:update', '权限组更新接口',     3, NULL, NULL, NULL, 3),
+    (0, 'api:permission-group:delete', '权限组删除接口',     3, NULL, NULL, NULL, 4),
+    (0, 'api:permission-group:assign', '权限组分配权限接口', 3, NULL, NULL, NULL, 5);
+
+-- ADMIN 绑定全部权限组管理权限
+INSERT INTO `sys_role_permission` (`role_id`, `permission_id`)
+SELECT r.id, p.id FROM `sys_role` r CROSS JOIN `sys_permission` p
+WHERE r.`code` = 'ADMIN' AND (p.`code` = 'menu:permission-group' OR p.`code` LIKE 'permission-group:%' OR p.`code` LIKE 'api:permission-group:%');
+
+-- 角色分配权限组按钮（挂在 menu:role 下）+ 接口权限
+-- 注意：MySQL 不允许 INSERT INTO sys_permission 的 VALUES 子查询引用 sys_permission 自身，须先用变量暂存
+SELECT id INTO @roleMenuIdForGroup FROM sys_permission WHERE code = 'menu:role' LIMIT 1;
+INSERT INTO `sys_permission` (`parent_id`, `code`, `name`, `type`, `path`, `component`, `icon`, `sort`) VALUES
+    (@roleMenuIdForGroup, 'role:assign-group', '分配权限组', 2, NULL, NULL, NULL, 6),
+    (0, 'api:role:assign-group', '角色分配权限组接口', 3, NULL, NULL, NULL, 6);
+INSERT INTO `sys_role_permission` (`role_id`, `permission_id`)
+SELECT r.id, p.id FROM `sys_role` r CROSS JOIN `sys_permission` p
+WHERE r.`code` = 'ADMIN' AND p.`code` IN ('role:assign-group', 'api:role:assign-group');

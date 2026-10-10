@@ -15,7 +15,7 @@ spring:
         - id: user-service
           uri: lb://user-service
           predicates:
-            - Path=/api/user/**,/api/auth/**,/api/device/**,/api/role/**,/api/permission/**
+            - Path=/api/user/**,/api/auth/**,/api/device/**,/api/role/**,/api/permission/**,/api/permission-group/**
           filters:
             # 保留 /api 前缀透传下游，便于下游统一鉴权与 OpenAPI
             - PreserveHostHeader

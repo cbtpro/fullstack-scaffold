@@ -50,6 +50,13 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'menu.permission', permission: 'menu:permission' },
         component: () => import('@/pages/permission-list/index.vue'),
       },
+      // 权限组：将一组权限打包成可复用单元，角色动态绑定后解析时 UNION 组内权限
+      {
+        path: 'permission-group',
+        name: 'permission-group',
+        meta: { title: 'menu.permissionGroup', permission: 'menu:permission-group' },
+        component: () => import('@/pages/permission-group-list/index.vue'),
+      },
       // 用户新建/详情/编辑共用三态页，模式由路由名派生；
       // 详情/编辑标题按记录 id 生成，同一路由打开多条记录时各自成标签
       {

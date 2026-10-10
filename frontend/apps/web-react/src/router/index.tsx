@@ -7,6 +7,7 @@ import UserFormPage from '@/pages/user-form';
 import DeviceListPage from '@/pages/device-list';
 import RoleListPage from '@/pages/role-list';
 import PermissionListPage from '@/pages/permission-list';
+import PermissionGroupListPage from '@/pages/permission-group-list';
 import type { RouteHandle } from '@/components/TabBar';
 import NotFoundPage from '@/pages/error/NotFound';
 
@@ -38,6 +39,11 @@ export const router = createBrowserRouter([
         path: 'permission',
         element: <PermissionListPage />,
         handle: { title: 'menu.permission', permission: 'menu:permission' } satisfies RouteHandle,
+      },
+      {
+        path: 'permission-group',
+        element: <PermissionGroupListPage />,
+        handle: { title: 'menu.permissionGroup', permission: 'menu:permission-group' } satisfies RouteHandle,
       },
       // 用户新建/详情/编辑共用三态页，模式由路径派生；
       // 详情/编辑标题按记录 id 生成，同一路由打开多条记录时各自成标签

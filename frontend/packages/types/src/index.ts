@@ -34,6 +34,18 @@ export interface Permission {
   children?: Permission[];
 }
 
+/** 权限组。对应后端 sys_permission_group 表，将一组权限打包成可复用单元。 */
+export interface PermissionGroup {
+  id: number;
+  code: string;
+  name: string;
+  description?: string;
+  sort?: number;
+  status?: number;
+  createTime?: string;
+  updateTime?: string;
+}
+
 /** 登录用户。字段与后端 user-service 返回对齐。 */
 export interface User {
   id: number | string;

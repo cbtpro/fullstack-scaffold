@@ -34,4 +34,10 @@ public interface RoleService {
 
     /** 为角色分配权限（全量替换，先删后插） */
     void assignPermissions(Long roleId, List<Long> permissionIds);
+
+    /** 查询角色已绑定的权限组 id 列表 */
+    List<Long> listGroupIds(Long roleId);
+
+    /** 为角色分配权限组（全量替换，先删后插） */
+    void assignGroups(Long roleId, List<Long> groupIds);
 }

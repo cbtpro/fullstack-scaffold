@@ -23,13 +23,14 @@ import {
   type TreeDataNode,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
-import type { PageResult, Permission, Role } from '@fs/types';
+import type { PageResult, Permission, PermissionGroup, Role } from '@fs/types';
 import { fs } from '@/request';
 import { PermissionGuard, withPermission } from '@/components/permission';
 
 const EditButton = withPermission({ codes: ['role:update'], fallback: 'disable' })(Button);
 const DeleteConfirm = withPermission({ codes: ['role:delete'] })(Popconfirm);
 const AssignButton = withPermission({ codes: ['role:assign'], fallback: 'disable' })(Button);
+const AssignGroupButton = withPermission({ codes: ['role:assign-group'], fallback: 'disable' })(Button);
 
 /** 扁平权限列表 → antd Tree 数据 */
 function buildTree(list: Permission[]): TreeDataNode[] {
@@ -64,6 +65,12 @@ export default function RoleListPage() {
   const [permRole, setPermRole] = useState<Role | null>(null);
   const [allPerms, setAllPerms] = useState<Permission[]>([]);
   const [checkedKeys, setCheckedKeys] = useState<React.Key[]>([]);
+
+  // 权限组分配弹窗
+  const [groupOpen, setGroupOpen] = useState(false);
+  const [groupRole, setGroupRole] = useState<Role | null>(null);
+  const [allGroups, setAllGroups] = useState<PermissionGroup[]>([]);
+  const [selectedGroupIds, setSelectedGroupIds] = useState<number[]>([]);
 
   const treeData = useMemo(() => buildTree(allPerms), [allPerms]);
 
@@ -136,6 +143,26 @@ export default function RoleListPage() {
     });
   };
 
+  const onAssignGroup = (record: Role) => {
+    setGroupRole(record);
+    setSelectedGroupIds([]);
+    fs.get<PermissionGroup[]>('/permission-group/all').then((groups) => {
+      setAllGroups(groups);
+      fs.get<number[]>(`/role/${record.id}/groups`).then((ids) => {
+        setSelectedGroupIds(ids);
+        setGroupOpen(true);
+      });
+    });
+  };
+
+  const onSaveGroup = () => {
+    if (!groupRole) return;
+    fs.put<void>(`/role/${groupRole.id}/groups`, selectedGroupIds).then(() => {
+      message.success(t('role.assignGroupSuccess'));
+      setGroupOpen(false);
+    });
+  };
+
   const columns: TableColumnsType<Role> = [
     { title: 'ID', dataIndex: 'id', width: 80 },
     { title: t('role.code'), dataIndex: 'code', width: 160 },
@@ -153,7 +180,7 @@ export default function RoleListPage() {
     {
       title: t('common.operation'),
       key: '__op',
-      width: 240,
+      width: 320,
       render: (_, record) => (
         <Space>
           <EditButton size="small" onClick={() => onEdit(record)}>
@@ -162,6 +189,9 @@ export default function RoleListPage() {
           <AssignButton size="small" onClick={() => onAssign(record)}>
             {t('role.assignPermission')}
           </AssignButton>
+          <AssignGroupButton size="small" onClick={() => onAssignGroup(record)}>
+            {t('role.assignGroup')}
+          </AssignGroupButton>
           <DeleteConfirm
             title={t('role.deleteConfirm')}
             okText={t('common.confirm')}
@@ -251,6 +281,24 @@ export default function RoleListPage() {
           checkedKeys={checkedKeys}
           onCheck={(keys) => setCheckedKeys(keys as React.Key[])}
           defaultExpandAll
+        />
+      </Modal>
+
+      {/* 分配权限组弹窗 */}
+      <Modal
+        title={groupRole ? t('role.assignGroupTitle', { name: groupRole.name }) : ''}
+        open={groupOpen}
+        onOk={onSaveGroup}
+        onCancel={() => setGroupOpen(false)}
+        width={480}
+        destroyOnClose
+      >
+        <Select
+          mode="multiple"
+          style={{ width: '100%' }}
+          value={selectedGroupIds}
+          onChange={(vals: number[]) => setSelectedGroupIds(vals)}
+          options={allGroups.map((g) => ({ value: g.id, label: `${g.name} (${g.code})` }))}
         />
       </Modal>
     </Card>

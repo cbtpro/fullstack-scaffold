@@ -88,4 +88,19 @@ public class RoleController {
         roleService.assignPermissions(roleId, permissionIds);
         return Result.success();
     }
+
+    @GetMapping("/{id}/groups")
+    @Operation(summary = "查询角色已绑定的权限组 id 列表")
+    @RequirePermission("api:role:assign-group")
+    public Result<List<Long>> listGroups(@PathVariable("id") Long roleId) {
+        return Result.success(roleService.listGroupIds(roleId));
+    }
+
+    @PutMapping("/{id}/groups")
+    @Operation(summary = "为角色分配权限组（全量替换）")
+    @RequirePermission("api:role:assign-group")
+    public Result<Void> assignGroups(@PathVariable("id") Long roleId, @RequestBody List<Long> groupIds) {
+        roleService.assignGroups(roleId, groupIds);
+        return Result.success();
+    }
 }

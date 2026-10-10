@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.scaffold.common.api.ResultCode;
 import com.scaffold.common.exception.BizException;
 import com.scaffold.user.entity.Permission;
+import com.scaffold.user.mapper.PermissionGroupItemMapper;
 import com.scaffold.user.mapper.PermissionMapper;
 import com.scaffold.user.mapper.RolePermissionMapper;
 import com.scaffold.user.service.PermissionService;
@@ -23,6 +24,7 @@ public class PermissionServiceImpl implements PermissionService {
 
     private final PermissionMapper permissionMapper;
     private final RolePermissionMapper rolePermissionMapper;
+    private final PermissionGroupItemMapper permissionGroupItemMapper;
 
     @Override
     public List<Permission> listAll() {
@@ -68,8 +70,9 @@ public class PermissionServiceImpl implements PermissionService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean deleteById(Long id) {
-        // 先清理角色-权限关联，再删权限
+        // 先清理角色-权限关联与权限组-权限关联，再删权限
         rolePermissionMapper.deleteByPermissionId(id);
+        permissionGroupItemMapper.deleteByPermissionId(id);
         return permissionMapper.deleteById(id) > 0;
     }
 
