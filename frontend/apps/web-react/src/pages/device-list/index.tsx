@@ -3,12 +3,14 @@
  * 设备由登录自动登记，无新增入口。操作权限走包装器模式：
  * 已可信的设备不显示"设为可信"，已吊销的不显示"吊销"，避免无效操作。
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button, Card, Popconfirm, Space, Table, Tag, Typography, message, type TableColumnsType } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type { DeviceRiskLevel, PageResult, UserDevice } from '@fs/types';
 import { fs } from '@/request';
 import { withPermission } from '@/components/permission';
+import { useDebounceSearch } from '@/hooks/useDebounceSearch';
+import { ImeInput } from '@/components/ImeInput';
 
 // 模块级定义包装组件，避免每次渲染创建新的组件类型导致子树反复卸载
 const TrustConfirm = withPermission<UserDevice>({
@@ -47,9 +49,17 @@ export default function DeviceListPage() {
   });
   const [loading, setLoading] = useState(false);
 
-  const reload = (page = 1, size = 10) => {
+  const keywordRef = useRef('');
+  const [keyword, setKeyword] = useState('');
+
+  const { scheduleSearch, cancelSearch } = useDebounceSearch({
+    getValues: () => ({ keyword: keywordRef.current }),
+    onSearch: ({ keyword: kw }) => reload(1, data.pageSize, kw),
+  });
+
+  const reload = (page = 1, size = 10, kw = keywordRef.current) => {
     setLoading(true);
-    fs.get<PageResult<UserDevice>>('/device/list', { params: { page, size } })
+    fs.get<PageResult<UserDevice>>('/device/list', { params: { page, size, keyword: kw } })
       .then((res) => setData(res))
       .finally(() => setLoading(false));
   };
@@ -135,6 +145,31 @@ export default function DeviceListPage() {
       <Typography.Title level={3} style={{ margin: 0, marginBottom: 16 }}>
         {t('device.title')}
       </Typography.Title>
+      <Space style={{ marginBottom: 16 }}>
+        <ImeInput
+          value={keyword}
+          onChange={(v) => {
+            keywordRef.current = v;
+            setKeyword(v);
+            scheduleSearch();
+          }}
+          onCompositionStart={cancelSearch}
+          onPressEnter={() => scheduleSearch({ force: true })}
+          placeholder={t('common.searchPlaceholder')}
+          allowClear
+          style={{ width: 240 }}
+        />
+        <Button type="primary" onClick={() => scheduleSearch({ force: true })}>
+          {t('common.search')}
+        </Button>
+        <Button onClick={() => {
+          keywordRef.current = '';
+          setKeyword('');
+          scheduleSearch({ force: true });
+        }}>
+          {t('common.reset')}
+        </Button>
+      </Space>
       <Table
         rowKey="id"
         size="middle"

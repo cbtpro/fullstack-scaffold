@@ -6,6 +6,19 @@
         <a-button type="primary" @click="onCreate()">{{ t('common.create') }}</a-button>
       </Permission>
     </a-space>
+    <a-space style="margin-bottom: 16px">
+      <ImeInput
+        :value="keyword"
+        @update:value="onKeywordChange"
+        :placeholder="t('common.searchPlaceholder')"
+        allow-clear
+        style="width: 240px"
+        @compositionstart="cancelSearch"
+        @press-enter="scheduleSearch({ force: true })"
+      />
+      <a-button type="primary" @click="scheduleSearch({ force: true })">{{ t('common.search') }}</a-button>
+      <a-button @click="onReset">{{ t('common.reset') }}</a-button>
+    </a-space>
     <a-table
       row-key="id"
       size="middle"
@@ -101,10 +114,32 @@ import { message } from 'ant-design-vue';
 import type { Permission as PermissionItem } from '@fs/types';
 import { fs } from '@/request';
 import Permission from '@/components/permission/Permission.vue';
+import ImeInput from '@/components/ImeInput.vue';
+import { useDebounceSearch } from '@/composables/useDebounceSearch';
 
 const { t } = useI18n();
 const loading = ref(false);
 const list = ref<PermissionItem[]>([]);
+
+// 搜索关键词与防抖调度（前端过滤，不请求后端）
+const keyword = ref('');
+const displayKeyword = ref('');
+
+const { scheduleSearch, cancelSearch } = useDebounceSearch({
+  getValues: () => ({ keyword: keyword.value }),
+  onSearch: ({ keyword: kw }) => { displayKeyword.value = kw; },
+  delay: 300,
+});
+
+function onKeywordChange(v: string) {
+  keyword.value = v;
+  scheduleSearch();
+}
+
+function onReset() {
+  keyword.value = '';
+  scheduleSearch({ force: true });
+}
 
 const formOpen = ref(false);
 const editing = ref<PermissionItem | null>(null);
@@ -121,7 +156,13 @@ const form = reactive({
   status: 1,
 });
 
-const treeData = computed(() => buildTree(list.value));
+const treeData = computed(() => {
+  const kw = displayKeyword.value.trim().toLowerCase();
+  const filtered = kw
+    ? list.value.filter(p => p.name.toLowerCase().includes(kw) || p.code.toLowerCase().includes(kw))
+    : list.value;
+  return buildTree(filtered);
+});
 const parentOptions = computed(() => [
   { value: 0, label: t('permission.root') },
   ...list.value.map((p) => ({ value: p.id, label: `${p.name} (${p.code})` })),

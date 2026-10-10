@@ -3,7 +3,7 @@
  * 权限树从 /permission/list 拉取扁平数据后前端构建树，
  * 回显时拉取角色已分配的权限 id 集合。
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Button,
   Card,
@@ -26,6 +26,8 @@ import { useTranslation } from 'react-i18next';
 import type { PageResult, Permission, PermissionGroup, Role } from '@fs/types';
 import { fs } from '@/request';
 import { PermissionGuard, withPermission } from '@/components/permission';
+import { useDebounceSearch } from '@/hooks/useDebounceSearch';
+import { ImeInput } from '@/components/ImeInput';
 
 const EditButton = withPermission({ codes: ['role:update'], fallback: 'disable' })(Button);
 const DeleteConfirm = withPermission({ codes: ['role:delete'] })(Popconfirm);
@@ -55,6 +57,14 @@ export default function RoleListPage() {
   const [data, setData] = useState<PageResult<Role>>({ list: [], total: 0, pageNum: 1, pageSize: 10 });
   const [loading, setLoading] = useState(false);
 
+  const keywordRef = useRef('');
+  const [keyword, setKeyword] = useState('');
+
+  const { scheduleSearch, cancelSearch } = useDebounceSearch({
+    getValues: () => ({ keyword: keywordRef.current }),
+    onSearch: ({ keyword: kw }) => reload(1, data.pageSize, kw),
+  });
+
   // 表单弹窗
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Role | null>(null);
@@ -74,9 +84,9 @@ export default function RoleListPage() {
 
   const treeData = useMemo(() => buildTree(allPerms), [allPerms]);
 
-  const reload = (page = 1, size = 10) => {
+  const reload = (page = 1, size = 10, kw = keywordRef.current) => {
     setLoading(true);
-    fs.get<PageResult<Role>>('/role/list', { params: { page, size } })
+    fs.get<PageResult<Role>>('/role/list', { params: { page, size, keyword: kw } })
       .then((res) => setData(res))
       .finally(() => setLoading(false));
   };
@@ -218,6 +228,31 @@ export default function RoleListPage() {
             {t('common.create')}
           </Button>
         </PermissionGuard>
+      </Space>
+      <Space style={{ marginBottom: 16 }}>
+        <ImeInput
+          value={keyword}
+          onChange={(v) => {
+            keywordRef.current = v;
+            setKeyword(v);
+            scheduleSearch();
+          }}
+          onCompositionStart={cancelSearch}
+          onPressEnter={() => scheduleSearch({ force: true })}
+          placeholder={t('common.searchPlaceholder')}
+          allowClear
+          style={{ width: 240 }}
+        />
+        <Button type="primary" onClick={() => scheduleSearch({ force: true })}>
+          {t('common.search')}
+        </Button>
+        <Button onClick={() => {
+          keywordRef.current = '';
+          setKeyword('');
+          scheduleSearch({ force: true });
+        }}>
+          {t('common.reset')}
+        </Button>
       </Space>
       <Table
         rowKey="id"

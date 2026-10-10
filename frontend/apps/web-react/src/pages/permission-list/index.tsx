@@ -2,7 +2,7 @@
  * 权限管理页：树形表格展示 + 新增/编辑/删除弹窗。
  * 权限分三类：1菜单、2按钮、3接口，通过 parentId 构成树。
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Button,
   Card,
@@ -23,6 +23,8 @@ import { useTranslation } from 'react-i18next';
 import type { Permission } from '@fs/types';
 import { fs } from '@/request';
 import { PermissionGuard, withPermission } from '@/components/permission';
+import { useDebounceSearch } from '@/hooks/useDebounceSearch';
+import { ImeInput } from '@/components/ImeInput';
 
 const EditButton = withPermission({ codes: ['permission:update'], fallback: 'disable' })(Button);
 const DeleteConfirm = withPermission({ codes: ['permission:delete'] })(Popconfirm);
@@ -50,11 +52,26 @@ export default function PermissionListPage() {
   const [list, setList] = useState<Permission[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const keywordRef = useRef('');
+  const [keyword, setKeyword] = useState('');
+  const [displayKeyword, setDisplayKeyword] = useState('');
+
+  const { scheduleSearch, cancelSearch } = useDebounceSearch({
+    getValues: () => ({ keyword: keywordRef.current }),
+    onSearch: ({ keyword: kw }) => setDisplayKeyword(kw),
+  });
+
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Permission | null>(null);
   const [form] = Form.useForm();
 
-  const treeData = useMemo(() => buildTree(list), [list]);
+  const treeData = useMemo(() => {
+    const kw = displayKeyword.trim().toLowerCase();
+    const filtered = kw
+      ? list.filter(p => p.name.toLowerCase().includes(kw) || p.code.toLowerCase().includes(kw))
+      : list;
+    return buildTree(filtered);
+  }, [list, displayKeyword]);
 
   const reload = () => {
     setLoading(true);
@@ -162,6 +179,31 @@ export default function PermissionListPage() {
             {t('common.create')}
           </Button>
         </PermissionGuard>
+      </Space>
+      <Space style={{ marginBottom: 16 }}>
+        <ImeInput
+          value={keyword}
+          onChange={(v) => {
+            keywordRef.current = v;
+            setKeyword(v);
+            scheduleSearch();
+          }}
+          onCompositionStart={cancelSearch}
+          onPressEnter={() => scheduleSearch({ force: true })}
+          placeholder={t('common.searchPlaceholder')}
+          allowClear
+          style={{ width: 240 }}
+        />
+        <Button type="primary" onClick={() => scheduleSearch({ force: true })}>
+          {t('common.search')}
+        </Button>
+        <Button onClick={() => {
+          keywordRef.current = '';
+          setKeyword('');
+          scheduleSearch({ force: true });
+        }}>
+          {t('common.reset')}
+        </Button>
       </Space>
       <Table
         rowKey="id"

@@ -6,6 +6,19 @@
         <a-button type="primary" @click="onCreate">{{ t('common.create') }}</a-button>
       </Permission>
     </a-space>
+    <a-space style="margin-bottom: 16px">
+      <ImeInput
+        :value="keyword"
+        @update:value="onKeywordChange"
+        :placeholder="t('common.searchPlaceholder')"
+        allow-clear
+        style="width: 240px"
+        @compositionstart="cancelSearch"
+        @press-enter="scheduleSearch({ force: true })"
+      />
+      <a-button type="primary" @click="scheduleSearch({ force: true })">{{ t('common.search') }}</a-button>
+      <a-button @click="onReset">{{ t('common.reset') }}</a-button>
+    </a-space>
     <a-table
       row-key="id"
       size="middle"
@@ -122,6 +135,8 @@ import { message } from 'ant-design-vue';
 import type { PageResult, Permission as PermissionItem, PermissionGroup, Role } from '@fs/types';
 import { fs } from '@/request';
 import Permission from '@/components/permission/Permission.vue';
+import ImeInput from '@/components/ImeInput.vue';
+import { useDebounceSearch } from '@/composables/useDebounceSearch';
 
 const { t } = useI18n();
 const loading = ref(false);
@@ -182,9 +197,28 @@ function buildTree(list: PermissionItem[]): any[] {
   return roots;
 }
 
-function reload(page = 1, size = 10) {
+// 搜索关键词与防抖调度
+const keyword = ref('');
+
+const { scheduleSearch, cancelSearch } = useDebounceSearch({
+  getValues: () => ({ keyword: keyword.value }),
+  onSearch: ({ keyword: kw }) => reload(1, data.pageSize, kw),
+  delay: 300,
+});
+
+function onKeywordChange(v: string) {
+  keyword.value = v;
+  scheduleSearch();
+}
+
+function onReset() {
+  keyword.value = '';
+  scheduleSearch({ force: true });
+}
+
+function reload(page = 1, size = 10, kw = keyword.value) {
   loading.value = true;
-  fs.get<PageResult<Role>>('/role/list', { params: { page, size } })
+  fs.get<PageResult<Role>>('/role/list', { params: { page, size, keyword: kw } })
     .then((res) => {
       data.list = res.list;
       data.total = res.total;
