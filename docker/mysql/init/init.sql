@@ -135,3 +135,29 @@ CREATE TABLE IF NOT EXISTS `user_device` (
     UNIQUE KEY `uk_device_id` (`device_id`),
     UNIQUE KEY `uk_user_fp` (`user_id`, `fingerprint`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='登录设备表';
+
+-- ============================================================================
+-- 登录设备管理权限：菜单 + 按钮 + 接口（自服务，ADMIN/USER 均绑定全部）
+-- ============================================================================
+INSERT INTO `sys_permission` (`parent_id`, `code`, `name`, `type`, `path`, `component`, `icon`, `sort`) VALUES
+    (0, 'menu:device', '登录设备', 1, '/device', 'device-list/index', 'smartphone', 20);
+SET @deviceMenuId = LAST_INSERT_ID();
+INSERT INTO `sys_permission` (`parent_id`, `code`, `name`, `type`, `path`, `component`, `icon`, `sort`) VALUES
+    (@deviceMenuId, 'device:view',   '查看',     2, NULL, NULL, NULL, 1),
+    (@deviceMenuId, 'device:trust',   '设为可信', 2, NULL, NULL, NULL, 2),
+    (@deviceMenuId, 'device:revoke',  '吊销',     2, NULL, NULL, NULL, 3),
+    (@deviceMenuId, 'device:remove',  '移除',     2, NULL, NULL, NULL, 4),
+    (0, 'api:device:list',   '设备列表接口',     3, NULL, NULL, NULL, 1),
+    (0, 'api:device:trust',  '设备设为可信接口', 3, NULL, NULL, NULL, 2),
+    (0, 'api:device:revoke', '设备吊销接口',     3, NULL, NULL, NULL, 3),
+    (0, 'api:device:remove', '设备移除接口',     3, NULL, NULL, NULL, 4);
+
+-- ADMIN 绑定全部设备权限
+INSERT INTO `sys_role_permission` (`role_id`, `permission_id`)
+SELECT r.id, p.id FROM `sys_role` r CROSS JOIN `sys_permission` p
+WHERE r.`code` = 'ADMIN' AND (p.`code` = 'menu:device' OR p.`code` LIKE 'device:%' OR p.`code` LIKE 'api:device:%');
+
+-- USER 绑定全部设备权限（自服务：管理自己的设备）
+INSERT INTO `sys_role_permission` (`role_id`, `permission_id`)
+SELECT r.id, p.id FROM `sys_role` r CROSS JOIN `sys_permission` p
+WHERE r.`code` = 'USER' AND (p.`code` = 'menu:device' OR p.`code` LIKE 'device:%' OR p.`code` LIKE 'api:device:%');
