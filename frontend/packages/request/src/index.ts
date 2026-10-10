@@ -1,5 +1,5 @@
 /**
- * axios HTTP 客户端封装。依赖 @fs/auth 注入 token、@fs/types 对齐响应契约。
+ * axios HTTP 客户端封装。依赖 @fs/auth 注入 token 与设备指纹、@fs/types 对齐响应契约。
  *
  * - createRequest 工厂返回 FsRequest，带 typed get/post/put/delete，自动解包 ApiResponse.data
  * - 401 自动清 token 并回调 onAuthExpired（业务侧跳登录页）
@@ -9,8 +9,11 @@
  */
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import axios from 'axios';
-import { clearToken, getToken } from '@fs/auth';
+import { clearToken, getDeviceFingerprint, getToken } from '@fs/auth';
 import { SUCCESS_CODE, UNAUTHORIZED_CODE, type ApiResponse } from '@fs/types';
+
+/** 设备指纹请求头，与后端 auth.device.fingerprint-header 默认值对齐。 */
+export const DEVICE_FP_HEADER = 'X-Device-Fp';
 
 /** 业务错误（响应到达但 code 非 0）。 */
 export class FsBusinessError extends Error {
@@ -100,9 +103,13 @@ export function createRequest(config: RequestConfig = {}): FsRequest {
 
   instance.interceptors.request.use((req) => {
     loadingBus.start();
-    const token = getToken();
-    if (token && req.headers) {
-      req.headers.Authorization = buildHeader(token);
+    if (req.headers) {
+      const token = getToken();
+      if (token) {
+        req.headers.Authorization = buildHeader(token);
+      }
+      // 设备指纹：登录时用于绑定，登录后供后端与 token 内指纹比对
+      req.headers[DEVICE_FP_HEADER] = getDeviceFingerprint();
     }
     return req;
   });

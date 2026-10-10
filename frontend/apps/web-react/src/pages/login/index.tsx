@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Button, Card, Form, Input, Typography, message } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import type { LoginRequest, LoginResult, User } from '@fs/types';
-import { setToken } from '@fs/auth';
+import type { CaptchaChallenge, LoginRequest, LoginResult, User } from '@fs/types';
+import { getDeviceFingerprint, setToken } from '@fs/auth';
 import { fs } from '@/request';
 import { useAuth } from '@/store/auth';
 
@@ -12,17 +12,35 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const setAuth = useAuth((s) => s.set);
   const [submitting, setSubmitting] = useState(false);
+  const [captcha, setCaptcha] = useState<CaptchaChallenge | null>(null);
+
+  const loadCaptcha = useCallback(async () => {
+    try {
+      setCaptcha(await fs.get<CaptchaChallenge>('/auth/captcha'));
+    } catch {
+      /* 业务/网络错误已由 request 层提示 */
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadCaptcha();
+  }, [loadCaptcha]);
 
   const onFinish = async (values: LoginRequest) => {
     setSubmitting(true);
     try {
-      const { token, user } = await fs.post<LoginResult>('/auth/login', values);
+      const { token, user } = await fs.post<LoginResult>('/auth/login', {
+        ...values,
+        captchaId: captcha?.captchaId,
+        deviceFingerprint: getDeviceFingerprint(),
+      });
       setToken(token);
       setAuth({ token, user: (user as User) ?? null });
       void message.success(t('login.success'));
       navigate('/', { replace: true });
     } catch {
-      /* onBusinessError 已展示 */
+      // 登录失败（含验证码错误）后旧验证码已被消费，刷新换一张
+      void loadCaptcha();
     } finally {
       setSubmitting(false);
     }
@@ -60,6 +78,26 @@ export default function LoginPage() {
             rules={[{ required: true, message: t('login.passwordRequired') }]}
           >
             <Input.Password placeholder={t('login.passwordPlaceholder')} autoComplete="current-password" />
+          </Form.Item>
+          <Form.Item label={t('login.captcha')} required>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Form.Item
+                name="captchaCode"
+                noStyle
+                rules={[{ required: true, message: t('login.captchaRequired') }]}
+              >
+                <Input placeholder={t('login.captchaPlaceholder')} autoComplete="off" />
+              </Form.Item>
+              {captcha && (
+                <img
+                  src={captcha.image}
+                  alt={t('login.captcha')}
+                  title={t('login.captcha')}
+                  onClick={() => void loadCaptcha()}
+                  style={{ height: 32, cursor: 'pointer', flexShrink: 0 }}
+                />
+              )}
+            </div>
           </Form.Item>
           <Form.Item style={{ marginBottom: 0 }}>
             <Button type="primary" htmlType="submit" block loading={submitting}>

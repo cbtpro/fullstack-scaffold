@@ -10,6 +10,8 @@
  */
 import type { User } from '@fs/types';
 
+export { getDeviceFingerprint } from './device';
+
 /** 默认 token 存储键。 */
 export const DEFAULT_TOKEN_KEY = 'fs_token';
 

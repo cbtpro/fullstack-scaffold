@@ -24,6 +24,20 @@ export interface User {
 export interface LoginRequest {
   username: string;
   password: string;
+  /** 图形验证码 id（/auth/captcha 下发），登录时原样回传 */
+  captchaId?: string;
+  /** 用户输入的验证码 */
+  captchaCode?: string;
+  /** 设备指纹（sha256 hex），登录时上报用于 token 绑定 */
+  deviceFingerprint?: string;
+}
+
+/** 图形验证码挑战。 */
+export interface CaptchaChallenge {
+  /** 验证码 id，登录时原样回传 */
+  captchaId: string;
+  /** base64 data URL 图片 */
+  image: string;
 }
 
 /** 登录响应。 */
