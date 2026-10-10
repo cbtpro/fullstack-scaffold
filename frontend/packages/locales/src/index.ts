@@ -226,7 +226,12 @@ export async function createReactI18n(resources: Resources = messages, locale: L
     resources: wrapped as never,
     lng: locale,
     fallbackLng: 'zh-CN',
-    interpolation: { escapeValue: false },
+    interpolation: {
+      escapeValue: false,
+      // 与 vue-i18n 对齐：统一用单花括号 {count} 插值，双端共享同一份资源
+      prefix: '{',
+      suffix: '}',
+    },
   });
   return instance;
 }
