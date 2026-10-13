@@ -8,6 +8,7 @@ import com.scaffold.common.api.PageResult;
 import com.scaffold.common.api.ResultCode;
 import com.scaffold.common.exception.BizException;
 import com.scaffold.user.entity.Role;
+import com.scaffold.user.enums.EnableStatus;
 import com.scaffold.user.mapper.RoleMapper;
 import com.scaffold.user.mapper.RolePermissionGroupMapper;
 import com.scaffold.user.mapper.RolePermissionMapper;
@@ -47,7 +48,7 @@ public class RoleServiceImpl implements RoleService {
     @Override
     public List<Role> listEnabled() {
         LambdaQueryWrapper<Role> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Role::getStatus, 1)
+        wrapper.eq(Role::getStatus, EnableStatus.ENABLED)
                 .orderByAsc(Role::getSort).orderByAsc(Role::getId);
         return roleMapper.selectList(wrapper);
     }
@@ -69,7 +70,7 @@ public class RoleServiceImpl implements RoleService {
         if (existsCode(role.getCode(), null)) {
             throw new BizException(ResultCode.PARAM_INVALID, "角色编码已存在");
         }
-        role.setStatus(role.getStatus() == null ? 1 : role.getStatus());
+        role.setStatus(role.getStatus() == null ? EnableStatus.ENABLED : role.getStatus());
         roleMapper.insert(role);
         return role;
     }

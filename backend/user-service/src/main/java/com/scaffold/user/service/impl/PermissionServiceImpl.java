@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.scaffold.common.api.ResultCode;
 import com.scaffold.common.exception.BizException;
 import com.scaffold.user.entity.Permission;
+import com.scaffold.user.enums.EnableStatus;
 import com.scaffold.user.mapper.PermissionGroupItemMapper;
 import com.scaffold.user.mapper.PermissionMapper;
 import com.scaffold.user.mapper.RolePermissionMapper;
@@ -50,7 +51,7 @@ public class PermissionServiceImpl implements PermissionService {
         if (existsCode(permission.getCode(), null)) {
             throw new BizException(ResultCode.PARAM_INVALID, "权限编码已存在");
         }
-        permission.setStatus(permission.getStatus() == null ? 1 : permission.getStatus());
+        permission.setStatus(permission.getStatus() == null ? EnableStatus.ENABLED : permission.getStatus());
         permissionMapper.insert(permission);
         return permission;
     }

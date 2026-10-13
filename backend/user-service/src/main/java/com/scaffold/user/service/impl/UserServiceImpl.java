@@ -9,6 +9,7 @@ import com.scaffold.common.api.PageResult;
 import com.scaffold.common.api.ResultCode;
 import com.scaffold.common.exception.BizException;
 import com.scaffold.user.entity.User;
+import com.scaffold.user.enums.EnableStatus;
 import com.scaffold.user.mapper.UserMapper;
 import com.scaffold.user.mapper.UserRoleMapper;
 import com.scaffold.user.service.RbacService;
@@ -73,7 +74,7 @@ public class UserServiceImpl implements UserService {
             throw new BizException(ResultCode.PARAM_INVALID, "用户名已存在");
         }
         user.setPassword(passwordEncoder.encode(user.getPassword() == null ? "123456" : user.getPassword()));
-        user.setStatus(user.getStatus() == null ? 1 : user.getStatus());
+        user.setStatus(user.getStatus() == null ? EnableStatus.ENABLED : user.getStatus());
         userMapper.insert(user);
         user.setPassword(null);
         return user;
@@ -130,7 +131,7 @@ public class UserServiceImpl implements UserService {
         if (user == null) {
             return null;
         }
-        if (user.getStatus() != null && user.getStatus() == 0) {
+        if (user.getStatus() == EnableStatus.DISABLED) {
             throw new BizException(ResultCode.FORBIDDEN, "用户已被禁用");
         }
         LoginUser loginUser = new LoginUser();
@@ -139,7 +140,7 @@ public class UserServiceImpl implements UserService {
         loginUser.setNickname(user.getNickname());
         loginUser.setEmail(user.getEmail());
         loginUser.setPhone(user.getPhone());
-        loginUser.setStatus(user.getStatus());
+        loginUser.setStatus(user.getStatus() == null ? null : user.getStatus().getCode());
         loginUser.setCreateTime(user.getCreateTime());
         loginUser.setUpdateTime(user.getUpdateTime());
         loginUser.setPassword(user.getPassword());

@@ -8,6 +8,7 @@ import com.scaffold.common.api.PageResult;
 import com.scaffold.common.api.ResultCode;
 import com.scaffold.common.exception.BizException;
 import com.scaffold.user.entity.PermissionGroup;
+import com.scaffold.user.enums.EnableStatus;
 import com.scaffold.user.mapper.PermissionGroupItemMapper;
 import com.scaffold.user.mapper.PermissionGroupMapper;
 import com.scaffold.user.mapper.RolePermissionGroupMapper;
@@ -48,7 +49,7 @@ public class PermissionGroupServiceImpl implements PermissionGroupService {
     @Override
     public List<PermissionGroup> listEnabled() {
         LambdaQueryWrapper<PermissionGroup> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(PermissionGroup::getStatus, 1)
+        wrapper.eq(PermissionGroup::getStatus, EnableStatus.ENABLED)
                 .orderByAsc(PermissionGroup::getSort).orderByAsc(PermissionGroup::getId);
         return permissionGroupMapper.selectList(wrapper);
     }
@@ -70,7 +71,7 @@ public class PermissionGroupServiceImpl implements PermissionGroupService {
         if (existsCode(group.getCode(), null)) {
             throw new BizException(ResultCode.PARAM_INVALID, "权限组编码已存在");
         }
-        group.setStatus(group.getStatus() == null ? 1 : group.getStatus());
+        group.setStatus(group.getStatus() == null ? EnableStatus.ENABLED : group.getStatus());
         permissionGroupMapper.insert(group);
         return group;
     }

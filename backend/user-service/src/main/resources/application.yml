@@ -22,9 +22,13 @@ spring:
 
 # MyBatis-Plus
 mybatis-plus:
+  # 枚举所在包，启动时扫描注册（实体枚举以 @EnumValue 标注落库字段）
+  type-enums-package: com.scaffold.user.enums
   configuration:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    # 统一枚举处理器：按 @EnumValue 完成 枚举 ↔ DB 值 转换
+    default-enum-type-handler: com.baomidou.mybatisplus.core.handlers.MybatisEnumTypeHandler
   global-config:
     db-config:
       id-type: auto
