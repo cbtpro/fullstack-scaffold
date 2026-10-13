@@ -3,13 +3,15 @@
  * 操作权限走包装器模式：规则集中在模块级定义，行内按钮经 withPermission 生成，
  * Popconfirm 整体被包裹，无权限时触发器与确认层一起卸载；单次出现的工具栏按钮用 PermissionGuard。
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Card, Modal, Popconfirm, Select, Space, Table, Tag, Typography, message, type TableColumnsType } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type { PageResult, Role, User } from '@fs/types';
 import { fs } from '@/request';
 import { PermissionGuard, withPermission } from '@/components/permission';
+import { useDebounceSearch } from '@/hooks/useDebounceSearch';
+import { ImeInput } from '@/components/ImeInput';
 
 // 模块级定义包装组件，避免每次渲染创建新的组件类型导致子树反复卸载
 const ViewButton = withPermission({ codes: ['user:view'], fallback: 'disable' })(Button);
@@ -33,6 +35,14 @@ export default function UserListPage() {
   });
   const [loading, setLoading] = useState(false);
 
+  // 搜索关键词与防抖调度
+  const keywordRef = useRef('');
+  const [keyword, setKeyword] = useState('');
+  const { scheduleSearch, cancelSearch } = useDebounceSearch({
+    getValues: () => ({ keyword: keywordRef.current }),
+    onSearch: ({ keyword: kw }) => reload(1, data.pageSize, kw),
+  });
+
   // 分配角色弹窗
   const [roleOpen, setRoleOpen] = useState(false);
   const [roleUser, setRoleUser] = useState<User | null>(null);
@@ -40,9 +50,9 @@ export default function UserListPage() {
   const [roleOptions, setRoleOptions] = useState<Role[]>([]);
 
   // 后端 PageQuery 参数为 page/size（pageNum/pageSize 会被忽略导致翻页失效）
-  const reload = (page = 1, size = 10) => {
+  const reload = (page = 1, size = 10, kw = keywordRef.current) => {
     setLoading(true);
-    fs.get<PageResult<User>>('/user/list', { params: { page, size } })
+    fs.get<PageResult<User>>('/user/list', { params: { page, size, keyword: kw } })
       .then((res) => setData(res))
       .finally(() => setLoading(false));
   };
@@ -136,6 +146,31 @@ export default function UserListPage() {
             {t('common.create')}
           </Button>
         </PermissionGuard>
+      </Space>
+      <Space style={{ marginBottom: 16 }}>
+        <ImeInput
+          value={keyword}
+          onChange={(v) => {
+            keywordRef.current = v;
+            setKeyword(v);
+            scheduleSearch();
+          }}
+          onCompositionStart={cancelSearch}
+          onPressEnter={() => scheduleSearch({ force: true })}
+          placeholder={t('common.searchPlaceholder')}
+          allowClear
+          style={{ width: 240 }}
+        />
+        <Button type="primary" onClick={() => scheduleSearch({ force: true })}>
+          {t('common.search')}
+        </Button>
+        <Button onClick={() => {
+          keywordRef.current = '';
+          setKeyword('');
+          scheduleSearch({ force: true });
+        }}>
+          {t('common.reset')}
+        </Button>
       </Space>
       <Table
         rowKey="id"

@@ -6,6 +6,19 @@
         <a-button type="primary" @click="openCreate">{{ t('common.create') }}</a-button>
       </Permission>
     </div>
+    <a-space style="margin-bottom: 16px">
+      <ImeInput
+        :value="keyword"
+        @update:value="onKeywordChange"
+        :placeholder="t('common.searchPlaceholder')"
+        allow-clear
+        style="width: 240px"
+        @compositionstart="cancelSearch"
+        @press-enter="scheduleSearch({ force: true })"
+      />
+      <a-button type="primary" @click="scheduleSearch({ force: true })">{{ t('common.search') }}</a-button>
+      <a-button @click="onReset">{{ t('common.reset') }}</a-button>
+    </a-space>
     <a-table
       row-key="id"
       size="middle"
@@ -74,6 +87,8 @@ import { message } from 'ant-design-vue';
 import type { PageResult, Role, User } from '@fs/types';
 import { fs } from '@/request';
 import Permission from '@/components/permission/Permission.vue';
+import ImeInput from '@/components/ImeInput.vue';
+import { useDebounceSearch } from '@/composables/useDebounceSearch';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -119,10 +134,28 @@ const pagination = computed(() => ({
   showTotal: (total: number) => t('user.total', { count: total }),
 }));
 
+// 搜索关键词与防抖调度
+const keyword = ref('');
+const { scheduleSearch, cancelSearch } = useDebounceSearch({
+  getValues: () => ({ keyword: keyword.value }),
+  onSearch: ({ keyword: kw }) => reload(1, data.pageSize, kw),
+  delay: 300,
+});
+
+function onKeywordChange(v: string) {
+  keyword.value = v;
+  scheduleSearch();
+}
+
+function onReset() {
+  keyword.value = '';
+  scheduleSearch({ force: true });
+}
+
 // 后端 PageQuery 参数为 page/size（pageNum/pageSize 会被忽略导致翻页失效）
-function reload(page = 1, size = 10) {
+function reload(page = 1, size = 10, kw = keyword.value) {
   loading.value = true;
-  fs.get<PageResult<User>>('/user/list', { params: { page, size } })
+  fs.get<PageResult<User>>('/user/list', { params: { page, size, keyword: kw } })
     .then((res) => {
       data.list = res.list;
       data.total = res.total;
