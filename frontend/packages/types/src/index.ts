@@ -3,9 +3,15 @@
  * 保证前后端契约一致。业务侧可在此扩展领域模型。
  */
 
+/**
+ * 实体主键。后端雪花主键为 19 位 Long，超出 JS 安全整数范围，序列化为字符串下发；
+ * 小整数（如 parentId=0）仍为数字，故取值类型统一为 number | string。
+ */
+export type ID = number | string;
+
 /** 角色。对应后端 sys_role 表。 */
 export interface Role {
-  id: number;
+  id: ID;
   code: string;
   name: string;
   status?: number;
@@ -17,8 +23,8 @@ export interface Role {
 
 /** 权限。对应后端 sys_permission 表，覆盖菜单/按钮/接口三类。 */
 export interface Permission {
-  id: number;
-  parentId: number;
+  id: ID;
+  parentId: ID;
   code: string;
   name: string;
   /** 类型：1菜单 2按钮 3接口 */
@@ -36,7 +42,7 @@ export interface Permission {
 
 /** 权限组。对应后端 sys_permission_group 表，将一组权限打包成可复用单元。 */
 export interface PermissionGroup {
-  id: number;
+  id: ID;
   code: string;
   name: string;
   description?: string;
@@ -48,7 +54,7 @@ export interface PermissionGroup {
 
 /** 登录用户。字段与后端 user-service 返回对齐。 */
 export interface User {
-  id: number | string;
+  id: ID;
   username: string;
   /** 密码。仅创建/修改请求携带；后端响应始终不返回（@JsonIgnore） */
   password?: string;
@@ -73,6 +79,17 @@ export interface LoginRequest {
   captchaCode?: string;
   /** 设备指纹（sha256 hex），登录时上报用于 token 绑定 */
   deviceFingerprint?: string;
+}
+
+/** 本人修改密码请求，用户身份由 token 解析。 */
+export interface ChangePasswordRequest {
+  oldPassword: string;
+  newPassword: string;
+}
+
+/** 管理员重置密码请求。 */
+export interface ResetPasswordRequest {
+  newPassword: string;
 }
 
 /** 图形验证码挑战。 */
@@ -133,8 +150,8 @@ export type DeviceRiskLevel = 'TRUSTED' | 'NORMAL' | 'RISKY' | 'REVOKED';
 
 /** 登录设备，对应后端 user_device 表记录。 */
 export interface UserDevice {
-  id: number;
-  userId: number;
+  id: ID;
+  userId: ID;
   deviceId: string;
   fingerprint: string;
   ip?: string;
@@ -148,6 +165,71 @@ export interface PageQuery {
   pageNum: number;
   pageSize: number;
   [key: string]: unknown;
+}
+
+/** 操作日志，对应后端 sys_operation_log 表记录（只读，写入由后端切面完成）。 */
+export interface OperationLog {
+  id: ID;
+  module: string;
+  action: string;
+  description?: string;
+  httpMethod?: string;
+  uri?: string;
+  /** 请求参数快照，后端已脱敏并截断 */
+  params?: string;
+  success: boolean;
+  errorMessage?: string;
+  operatorId?: ID;
+  operatorName?: string;
+  clientIp?: string;
+  durationMs?: number;
+  createTime: string;
+}
+
+/** 登录日志，对应后端 sys_login_log 表记录（只读，写入由登录入口完成）。 */
+export interface LoginLog {
+  id: ID;
+  username: string;
+  /** LOGIN 登录 / LOGOUT 登出 */
+  eventType: string;
+  success: boolean;
+  message?: string;
+  clientIp?: string;
+  userAgent?: string;
+  createTime: string;
+}
+
+/** 字典类型，对应后端 sys_dict_type 表。 */
+export interface DictType {
+  id: ID;
+  code: string;
+  name: string;
+  description?: string;
+  sort: number;
+  /** 启用状态：1 启用 0 禁用 */
+  status?: number;
+  createTime?: string;
+  updateTime?: string;
+}
+
+/** 字典项，对应后端 sys_dict_item 表。 */
+export interface DictItem {
+  id: ID;
+  typeId: ID;
+  label: string;
+  value: string;
+  remark?: string;
+  sort: number;
+  status?: number;
+  createTime?: string;
+  updateTime?: string;
+}
+
+/** 本人资料维护入参，对应后端 ProfileUpdateRequest。 */
+export interface ProfileUpdatePayload {
+  nickname?: string;
+  email?: string;
+  phone?: string;
 }
 
 /** 约定成功业务码。 */

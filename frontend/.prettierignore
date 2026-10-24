@@ -1,0 +1,7 @@
+node_modules
+dist
+.turbo
+pnpm-lock.yaml
+*.min.js
+# macOS 在外置卷上生成的 AppleDouble 元数据
+._*

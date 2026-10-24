@@ -20,10 +20,18 @@
 
     <!-- 详情：纯文本只读展示，枚举显示名、时间格式化 -->
     <a-form v-else-if="mode === 'detail'" :label-col="{ span: 5 }" :wrapper-col="{ span: 17 }">
-      <a-form-item :label="t('login.username')"><span>{{ record?.username ?? '-' }}</span></a-form-item>
-      <a-form-item :label="t('user.nickname')"><span>{{ record?.nickname || '-' }}</span></a-form-item>
-      <a-form-item :label="t('user.email')"><span>{{ record?.email || '-' }}</span></a-form-item>
-      <a-form-item :label="t('user.phone')"><span>{{ record?.phone || '-' }}</span></a-form-item>
+      <a-form-item :label="t('login.username')"
+        ><span>{{ record?.username ?? '-' }}</span></a-form-item
+      >
+      <a-form-item :label="t('user.nickname')"
+        ><span>{{ record?.nickname || '-' }}</span></a-form-item
+      >
+      <a-form-item :label="t('user.email')"
+        ><span>{{ record?.email || '-' }}</span></a-form-item
+      >
+      <a-form-item :label="t('user.phone')"
+        ><span>{{ record?.phone || '-' }}</span></a-form-item
+      >
       <a-form-item :label="t('user.roles')">
         <span>{{ record?.roles?.length ? record.roles.join('、') : '-' }}</span>
       </a-form-item>
@@ -32,8 +40,12 @@
           {{ record?.status === 1 ? t('user.enabled') : t('user.disabled') }}
         </a-tag>
       </a-form-item>
-      <a-form-item :label="t('user.createTime')"><span>{{ formatTime(record?.createTime) }}</span></a-form-item>
-      <a-form-item :label="t('user.updateTime')"><span>{{ formatTime(record?.updateTime) }}</span></a-form-item>
+      <a-form-item :label="t('user.createTime')"
+        ><span>{{ formatTime(record?.createTime) }}</span></a-form-item
+      >
+      <a-form-item :label="t('user.updateTime')"
+        ><span>{{ formatTime(record?.updateTime) }}</span></a-form-item
+      >
     </a-form>
 
     <!-- 新建 / 编辑：共享同一份字段与校验 -->

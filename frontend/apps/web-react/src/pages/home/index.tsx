@@ -9,9 +9,7 @@ export default function HomePage() {
     <Card>
       <Typography.Title level={3}>{t('menu.home')}</Typography.Title>
       <Typography.Paragraph>
-        {user
-          ? `${t('login.success')}，${user.nickname ?? user.username}`
-          : t('login.success')}
+        {user ? `${t('login.success')}，${user.nickname ?? user.username}` : t('login.success')}
       </Typography.Paragraph>
     </Card>
   );

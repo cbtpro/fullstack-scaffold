@@ -157,7 +157,9 @@ export default function UserFormPage() {
           <Form.Item label={t('user.nickname')}>{record?.nickname || '-'}</Form.Item>
           <Form.Item label={t('user.email')}>{record?.email || '-'}</Form.Item>
           <Form.Item label={t('user.phone')}>{record?.phone || '-'}</Form.Item>
-          <Form.Item label={t('user.roles')}>{record?.roles?.length ? record.roles.join('、') : '-'}</Form.Item>
+          <Form.Item label={t('user.roles')}>
+            {record?.roles?.length ? record.roles.join('、') : '-'}
+          </Form.Item>
           <Form.Item label={t('user.status')}>
             <Tag color={record?.status === 1 ? 'green' : 'red'}>
               {record?.status === 1 ? t('user.enabled') : t('user.disabled')}
@@ -178,42 +180,49 @@ export default function UserFormPage() {
             disabled={saving}
             initialValues={{ status: 1 }}
           >
-          <Form.Item
-            name="username"
-            label={t('login.username')}
-            rules={[{ required: true, message: t('login.usernameRequired') }]}
-          >
-            <Input autoComplete="off" />
-          </Form.Item>
-          <Form.Item name="nickname" label={t('user.nickname')}>
-            <Input autoComplete="off" />
-          </Form.Item>
-          <Form.Item
-            name="password"
-            label={t('login.password')}
-            extra={mode === 'edit' ? t('user.passwordEditHint') : t('user.passwordHint')}
-          >
-            <Input.Password autoComplete="new-password" />
-          </Form.Item>
-          <Form.Item name="email" label={t('user.email')} rules={[{ type: 'email', message: t('user.emailInvalid') }]}>
-            <Input autoComplete="off" />
-          </Form.Item>
-          <Form.Item name="phone" label={t('user.phone')}>
-            <Input autoComplete="off" />
-          </Form.Item>
-          <Form.Item name="status" label={t('user.status')}>
-            <Select
-              options={[
-                { value: 1, label: t('user.enabled') },
-                { value: 0, label: t('user.disabled') },
-              ]}
-            />
-          </Form.Item>
+            <Form.Item
+              name="username"
+              label={t('login.username')}
+              rules={[{ required: true, message: t('login.usernameRequired') }]}
+            >
+              <Input autoComplete="off" />
+            </Form.Item>
+            <Form.Item name="nickname" label={t('user.nickname')}>
+              <Input autoComplete="off" />
+            </Form.Item>
+            <Form.Item
+              name="password"
+              label={t('login.password')}
+              extra={mode === 'edit' ? t('user.passwordEditHint') : t('user.passwordHint')}
+            >
+              <Input.Password autoComplete="new-password" />
+            </Form.Item>
+            <Form.Item
+              name="email"
+              label={t('user.email')}
+              rules={[{ type: 'email', message: t('user.emailInvalid') }]}
+            >
+              <Input autoComplete="off" />
+            </Form.Item>
+            <Form.Item name="phone" label={t('user.phone')}>
+              <Input autoComplete="off" />
+            </Form.Item>
+            <Form.Item name="status" label={t('user.status')}>
+              <Select
+                options={[
+                  { value: 1, label: t('user.enabled') },
+                  { value: 0, label: t('user.disabled') },
+                ]}
+              />
+            </Form.Item>
           </Form>
           {/* 长表单吸底操作栏：隐藏占位 → 滚动吸附 → 锚点可见恢复文档流 */}
           <StickyActions>
             <Space>
-              <Button disabled={saving} onClick={() => navigate(mode === 'edit' ? `/user/detail/${id}` : '/user')}>
+              <Button
+                disabled={saving}
+                onClick={() => navigate(mode === 'edit' ? `/user/detail/${id}` : '/user')}
+              >
                 {mode === 'edit' ? t('user.cancelEdit') : t('common.cancel')}
               </Button>
               <Button type="primary" loading={saving} onClick={handleSave}>

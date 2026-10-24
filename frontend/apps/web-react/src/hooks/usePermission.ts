@@ -25,8 +25,7 @@ export function usePermission<T = unknown>(rule?: PermissionRule<T>): Permission
   return useMemo<PermissionApi<T>>(() => {
     const permissions = user?.permissions ?? [];
     const userRoles = user?.roles ?? [];
-    const check = (r: PermissionRule<T> = {}) =>
-      checkPermission<T>({ permissions, userRoles, ...r });
+    const check = (r: PermissionRule<T> = {}) => checkPermission<T>({ permissions, userRoles, ...r });
     return {
       hasAuth: check(rule),
       check,

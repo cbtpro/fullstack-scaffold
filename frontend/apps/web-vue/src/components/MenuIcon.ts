@@ -4,7 +4,19 @@
  * 此组件按名称映射到 lucide 图标，供 antd-vue Menu 的 icon 属性使用。
  */
 import { defineComponent, h, type Component } from 'vue';
-import { House, Key, Layers, Settings, Shield, Smartphone, User, Users } from 'lucide-vue-next';
+import {
+  Book,
+  FileText,
+  History,
+  House,
+  Key,
+  Layers,
+  Settings,
+  Shield,
+  Smartphone,
+  User,
+  Users,
+} from 'lucide-vue-next';
 
 /** 后端图标名 → lucide 图标组件（新增图标在此登记即可） */
 const ICON_MAP: Record<string, Component> = {
@@ -16,6 +28,9 @@ const ICON_MAP: Record<string, Component> = {
   shield: Shield,
   key: Key,
   layers: Layers,
+  'file-text': FileText,
+  history: History,
+  book: Book,
 };
 
 /**
@@ -32,11 +47,9 @@ export const MenuIcon = defineComponent({
       const Lucide = ICON_MAP[props.icon];
       if (!Lucide) return null;
       // 包一层 span.anticon：antd Menu 的图标间距/对齐样式作用在 .anticon 上
-      return h(
-        'span',
-        { role: 'img', class: 'anticon', 'aria-hidden': 'true' },
-        [h(Lucide, { size: '1em' })],
-      );
+      return h('span', { role: 'img', class: 'anticon', 'aria-hidden': 'true' }, [
+        h(Lucide, { size: '1em' }),
+      ]);
     };
   },
 });

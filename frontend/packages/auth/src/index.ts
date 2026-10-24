@@ -120,10 +120,7 @@ export const SUPER_PERMISSION = '*:*:*';
  *
  * 不依赖 store，便于在任意位置（组件、守卫、指令）按当前用户快照调用。
  */
-export function hasPermission(
-  permissions: string[] | undefined | null,
-  value: string,
-): boolean {
+export function hasPermission(permissions: string[] | undefined | null, value: string): boolean {
   if (!permissions || permissions.length === 0) return false;
   if (permissions.includes(SUPER_PERMISSION)) return true;
   return permissions.includes(value);
@@ -132,10 +129,7 @@ export function hasPermission(
 /**
  * 判定当前用户是否拥有指定角色编码。
  */
-export function hasRole(
-  roles: string[] | undefined | null,
-  value: string,
-): boolean {
+export function hasRole(roles: string[] | undefined | null, value: string): boolean {
   if (!roles || roles.length === 0) return false;
   return roles.includes(value);
 }

@@ -22,8 +22,6 @@ import { computed, ref, watchEffect } from 'vue';
 import { useRoute, useRouter, type RouteParams } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 
-type Translator = (key: string) => string;
-
 interface RouteTab {
   key: string;
   label: string;

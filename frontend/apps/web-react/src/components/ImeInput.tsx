@@ -21,13 +21,7 @@ export interface ImeInputProps extends Omit<InputProps, 'value' | 'onChange'> {
   onCompositionStart?: () => void;
 }
 
-export function ImeInput({
-  value,
-  onChange,
-  onCompositionStart,
-  onPressEnter,
-  ...rest
-}: ImeInputProps) {
+export function ImeInput({ value, onChange, onCompositionStart, onPressEnter, ...rest }: ImeInputProps) {
   const composingRef = useRef(false);
   const [draft, setDraft] = useState(value ?? '');
 

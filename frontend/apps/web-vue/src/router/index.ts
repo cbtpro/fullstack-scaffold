@@ -24,7 +24,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/layouts/BasicLayout.vue'),
     children: [
       { path: '', redirect: { name: 'home' } },
-      { path: 'home', name: 'home', meta: { title: 'menu.home' }, component: () => import('@/pages/home/index.vue') },
+      {
+        path: 'home',
+        name: 'home',
+        meta: { title: 'menu.home' },
+        component: () => import('@/pages/home/index.vue'),
+      },
       // 列表页声明菜单权限：菜单不可见的用户直达 URL 也会被布局级守卫拦截为 403
       {
         path: 'user',
@@ -56,6 +61,34 @@ const routes: RouteRecordRaw[] = [
         name: 'permission-group',
         meta: { title: 'menu.permissionGroup', permission: 'menu:permission-group' },
         component: () => import('@/pages/permission-group-list/index.vue'),
+      },
+      // 操作日志：只读审计记录，权限码与后端 @RequirePermission 一致
+      {
+        path: 'operation-log',
+        name: 'operation-log',
+        meta: { title: 'menu.operationLog', permission: 'menu:operation-log' },
+        component: () => import('@/pages/operation-log/index.vue'),
+      },
+      // 登录日志：登录/登出审计记录，只读
+      {
+        path: 'login-log',
+        name: 'login-log',
+        meta: { title: 'menu.loginLog', permission: 'menu:login-log' },
+        component: () => import('@/pages/login-log/index.vue'),
+      },
+      // 字典管理：类型与其下字典项
+      {
+        path: 'dict',
+        name: 'dict',
+        meta: { title: 'menu.dict', permission: 'menu:dict' },
+        component: () => import('@/pages/dict/index.vue'),
+      },
+      // 个人中心无权限码：登录即可维护本人资料
+      {
+        path: 'profile',
+        name: 'profile',
+        meta: { title: 'menu.profile' },
+        component: () => import('@/pages/profile/index.vue'),
       },
       // 用户新建/详情/编辑共用三态页，模式由路由名派生；
       // 详情/编辑标题按记录 id 生成，同一路由打开多条记录时各自成标签

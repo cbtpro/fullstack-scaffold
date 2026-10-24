@@ -23,7 +23,7 @@ import {
   type TreeDataNode,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
-import type { PageResult, Permission, PermissionGroup, Role } from '@fs/types';
+import type { ID, PageResult, Permission, PermissionGroup, Role } from '@fs/types';
 import { fs } from '@/request';
 import { PermissionGuard, withPermission } from '@/components/permission';
 import { useDebounceSearch } from '@/hooks/useDebounceSearch';
@@ -36,7 +36,7 @@ const AssignGroupButton = withPermission({ codes: ['role:assign-group'], fallbac
 
 /** 扁平权限列表 → antd Tree 数据 */
 function buildTree(list: Permission[]): TreeDataNode[] {
-  const map = new Map<number, TreeDataNode>();
+  const map = new Map<ID, TreeDataNode>();
   const roots: TreeDataNode[] = [];
   list.forEach((p) => {
     map.set(p.id, { key: p.id, title: `${p.name} (${p.code})`, children: [] });
@@ -80,7 +80,7 @@ export default function RoleListPage() {
   const [groupOpen, setGroupOpen] = useState(false);
   const [groupRole, setGroupRole] = useState<Role | null>(null);
   const [allGroups, setAllGroups] = useState<PermissionGroup[]>([]);
-  const [selectedGroupIds, setSelectedGroupIds] = useState<number[]>([]);
+  const [selectedGroupIds, setSelectedGroupIds] = useState<ID[]>([]);
 
   const treeData = useMemo(() => buildTree(allPerms), [allPerms]);
 
@@ -138,7 +138,7 @@ export default function RoleListPage() {
     setCheckedKeys([]);
     fs.get<Permission[]>('/permission/list').then((perms) => {
       setAllPerms(perms);
-      fs.get<number[]>(`/role/${record.id}/permissions`).then((ids) => {
+      fs.get<ID[]>(`/role/${record.id}/permissions`).then((ids) => {
         setCheckedKeys(ids);
         setPermOpen(true);
       });
@@ -158,7 +158,7 @@ export default function RoleListPage() {
     setSelectedGroupIds([]);
     fs.get<PermissionGroup[]>('/permission-group/all').then((groups) => {
       setAllGroups(groups);
-      fs.get<number[]>(`/role/${record.id}/groups`).then((ids) => {
+      fs.get<ID[]>(`/role/${record.id}/groups`).then((ids) => {
         setSelectedGroupIds(ids);
         setGroupOpen(true);
       });
@@ -246,11 +246,13 @@ export default function RoleListPage() {
         <Button type="primary" onClick={() => scheduleSearch({ force: true })}>
           {t('common.search')}
         </Button>
-        <Button onClick={() => {
-          keywordRef.current = '';
-          setKeyword('');
-          scheduleSearch({ force: true });
-        }}>
+        <Button
+          onClick={() => {
+            keywordRef.current = '';
+            setKeyword('');
+            scheduleSearch({ force: true });
+          }}
+        >
           {t('common.reset')}
         </Button>
       </Space>
@@ -278,10 +280,18 @@ export default function RoleListPage() {
         destroyOnClose
       >
         <Form form={form} layout="vertical">
-          <Form.Item name="code" label={t('role.code')} rules={[{ required: true, message: t('role.codeRequired') }]}>
+          <Form.Item
+            name="code"
+            label={t('role.code')}
+            rules={[{ required: true, message: t('role.codeRequired') }]}
+          >
             <Input />
           </Form.Item>
-          <Form.Item name="name" label={t('role.name')} rules={[{ required: true, message: t('role.nameRequired') }]}>
+          <Form.Item
+            name="name"
+            label={t('role.name')}
+            rules={[{ required: true, message: t('role.nameRequired') }]}
+          >
             <Input />
           </Form.Item>
           <Form.Item name="sort" label={t('role.sort')}>
@@ -332,7 +342,7 @@ export default function RoleListPage() {
           mode="multiple"
           style={{ width: '100%' }}
           value={selectedGroupIds}
-          onChange={(vals: number[]) => setSelectedGroupIds(vals)}
+          onChange={(vals: ID[]) => setSelectedGroupIds(vals)}
           options={allGroups.map((g) => ({ value: g.id, label: `${g.name} (${g.code})` }))}
         />
       </Modal>

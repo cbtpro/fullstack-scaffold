@@ -20,7 +20,7 @@ import {
   type TableColumnsType,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
-import type { Permission } from '@fs/types';
+import type { ID, Permission } from '@fs/types';
 import { fs } from '@/request';
 import { PermissionGuard, withPermission } from '@/components/permission';
 import { useDebounceSearch } from '@/hooks/useDebounceSearch';
@@ -33,7 +33,7 @@ const TYPE_COLORS: Record<number, string> = { 1: 'blue', 2: 'green', 3: 'orange'
 
 /** 扁平列表 → 带 children 的树（用于 Table 树形展示） */
 function buildTree(list: Permission[]): Permission[] {
-  const map = new Map<number, Permission>();
+  const map = new Map<ID, Permission>();
   const roots: Permission[] = [];
   list.forEach((p) => map.set(p.id, { ...p, children: [] }));
   list.forEach((p) => {
@@ -68,7 +68,7 @@ export default function PermissionListPage() {
   const treeData = useMemo(() => {
     const kw = displayKeyword.trim().toLowerCase();
     const filtered = kw
-      ? list.filter(p => p.name.toLowerCase().includes(kw) || p.code.toLowerCase().includes(kw))
+      ? list.filter((p) => p.name.toLowerCase().includes(kw) || p.code.toLowerCase().includes(kw))
       : list;
     return buildTree(filtered);
   }, [list, displayKeyword]);
@@ -85,7 +85,10 @@ export default function PermissionListPage() {
   }, []);
 
   const parentOptions = useMemo(
-    () => [{ value: 0, label: t('permission.root') }, ...list.map((p) => ({ value: p.id, label: `${p.name} (${p.code})` }))],
+    () => [
+      { value: 0, label: t('permission.root') },
+      ...list.map((p) => ({ value: p.id, label: `${p.name} (${p.code})` })),
+    ],
     [list, t],
   );
 
@@ -139,7 +142,9 @@ export default function PermissionListPage() {
       dataIndex: 'type',
       width: 100,
       render: (type: number) => (
-        <Tag color={TYPE_COLORS[type]}>{t(`permission.type${type === 1 ? 'Menu' : type === 2 ? 'Button' : 'Api'}`)}</Tag>
+        <Tag color={TYPE_COLORS[type]}>
+          {t(`permission.type${type === 1 ? 'Menu' : type === 2 ? 'Button' : 'Api'}`)}
+        </Tag>
       ),
     },
     { title: t('permission.path'), dataIndex: 'path', render: (v) => v ?? '-', width: 140 },
@@ -197,11 +202,13 @@ export default function PermissionListPage() {
         <Button type="primary" onClick={() => scheduleSearch({ force: true })}>
           {t('common.search')}
         </Button>
-        <Button onClick={() => {
-          keywordRef.current = '';
-          setKeyword('');
-          scheduleSearch({ force: true });
-        }}>
+        <Button
+          onClick={() => {
+            keywordRef.current = '';
+            setKeyword('');
+            scheduleSearch({ force: true });
+          }}
+        >
           {t('common.reset')}
         </Button>
       </Space>
@@ -227,7 +234,11 @@ export default function PermissionListPage() {
           <Form.Item name="parentId" label={t('permission.parentId')}>
             <Select options={parentOptions} />
           </Form.Item>
-          <Form.Item name="type" label={t('permission.type')} rules={[{ required: true, message: t('permission.typeRequired') }]}>
+          <Form.Item
+            name="type"
+            label={t('permission.type')}
+            rules={[{ required: true, message: t('permission.typeRequired') }]}
+          >
             <Select
               options={[
                 { value: 1, label: t('permission.typeMenu') },
@@ -236,10 +247,18 @@ export default function PermissionListPage() {
               ]}
             />
           </Form.Item>
-          <Form.Item name="code" label={t('permission.code')} rules={[{ required: true, message: t('permission.codeRequired') }]}>
+          <Form.Item
+            name="code"
+            label={t('permission.code')}
+            rules={[{ required: true, message: t('permission.codeRequired') }]}
+          >
             <Input />
           </Form.Item>
-          <Form.Item name="name" label={t('permission.name')} rules={[{ required: true, message: t('permission.nameRequired') }]}>
+          <Form.Item
+            name="name"
+            label={t('permission.name')}
+            rules={[{ required: true, message: t('permission.nameRequired') }]}
+          >
             <Input />
           </Form.Item>
           <Form.Item name="path" label={t('permission.path')}>

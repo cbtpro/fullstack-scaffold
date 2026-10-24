@@ -7,7 +7,8 @@
     "dev": "vite --port 5174",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview --port 5174",
-    "typecheck": "vue-tsc --noEmit"
+    "typecheck": "vue-tsc --noEmit",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@fs/auth": "workspace:*",
@@ -24,10 +25,14 @@
     "vue-router": "^4.4.5"
   },
   "devDependencies": {
+    "@fs/eslint-config": "workspace:*",
     "@fs/tsconfig": "workspace:*",
     "@types/node": "^20.16.11",
     "@vitejs/plugin-vue": "^5.1.4",
+    "eslint": "^10.13.0",
+    "eslint-plugin-vue": "^10.11.1",
     "typescript": "^5.5.4",
+    "typescript-eslint": "^8.71.2",
     "vite": "^5.4.10",
     "vue-tsc": "^2.1.6"
   }

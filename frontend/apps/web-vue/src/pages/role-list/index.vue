@@ -68,10 +68,18 @@
       destroy-on-close
     >
       <a-form ref="formRef" :model="form" layout="vertical">
-        <a-form-item :label="t('role.code')" name="code" :rules="[{ required: true, message: t('role.codeRequired') }]">
+        <a-form-item
+          :label="t('role.code')"
+          name="code"
+          :rules="[{ required: true, message: t('role.codeRequired') }]"
+        >
           <a-input v-model:value="form.code" />
         </a-form-item>
-        <a-form-item :label="t('role.name')" name="name" :rules="[{ required: true, message: t('role.nameRequired') }]">
+        <a-form-item
+          :label="t('role.name')"
+          name="name"
+          :rules="[{ required: true, message: t('role.nameRequired') }]"
+        >
           <a-input v-model:value="form.name" />
         </a-form-item>
         <a-form-item :label="t('role.sort')" name="sort">
@@ -97,12 +105,7 @@
       width="520px"
       destroy-on-close
     >
-      <a-tree
-        checkable
-        :tree-data="treeData"
-        v-model:checkedKeys="checkedKeys"
-        default-expand-all
-      />
+      <a-tree checkable :tree-data="treeData" v-model:checkedKeys="checkedKeys" default-expand-all />
     </a-modal>
 
     <!-- 分配权限组弹窗 -->
@@ -132,11 +135,18 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { message } from 'ant-design-vue';
-import type { PageResult, Permission as PermissionItem, PermissionGroup, Role } from '@fs/types';
+import type { ID, PageResult, Permission as PermissionItem, PermissionGroup, Role } from '@fs/types';
 import { fs } from '@/request';
 import Permission from '@/components/permission/Permission.vue';
 import ImeInput from '@/components/ImeInput.vue';
 import { useDebounceSearch } from '@/composables/useDebounceSearch';
+
+/** antd Tree 的节点结构：扁平权限列表按 parentId 组装成该形状 */
+interface RoleTreeNode {
+  key: ID;
+  title: string;
+  children: RoleTreeNode[];
+}
 
 const { t } = useI18n();
 const loading = ref(false);
@@ -156,7 +166,7 @@ const checkedKeys = ref<(string | number)[]>([]);
 const groupOpen = ref(false);
 const groupRole = ref<Role | null>(null);
 const allGroups = ref<PermissionGroup[]>([]);
-const groupCheckedIds = ref<number[]>([]);
+const groupCheckedIds = ref<ID[]>([]);
 
 const treeData = computed(() => buildTree(allPerms.value));
 
@@ -169,7 +179,11 @@ const columns = computed(() => [
   { title: t('role.code'), dataIndex: 'code', width: 160 },
   { title: t('role.name'), dataIndex: 'name' },
   { title: t('role.sort'), dataIndex: 'sort', width: 80 },
-  { title: t('role.description'), dataIndex: 'description', customRender: ({ record }: any) => record.description ?? '-' },
+  {
+    title: t('role.description'),
+    dataIndex: 'description',
+    customRender: ({ record }: { record: Role }) => record.description ?? '-',
+  },
   { title: t('role.status'), dataIndex: 'status', width: 90 },
   { title: t('role.createTime'), dataIndex: 'createTime', width: 180 },
   { title: t('common.operation'), key: '__op', width: 320 },
@@ -182,9 +196,9 @@ const pagination = computed(() => ({
   showTotal: (total: number) => t('user.total', { count: total }),
 }));
 
-function buildTree(list: PermissionItem[]): any[] {
-  const map = new Map<number, any>();
-  const roots: any[] = [];
+function buildTree(list: PermissionItem[]): RoleTreeNode[] {
+  const map = new Map<ID, RoleTreeNode>();
+  const roots: RoleTreeNode[] = [];
   list.forEach((p) => map.set(p.id, { key: p.id, title: `${p.name} (${p.code})`, children: [] }));
   list.forEach((p) => {
     const node = map.get(p.id)!;
@@ -274,7 +288,7 @@ function onAssign(record: Role) {
   checkedKeys.value = [];
   fs.get<PermissionItem[]>('/permission/list').then((perms) => {
     allPerms.value = perms;
-    fs.get<number[]>(`/role/${record.id}/permissions`).then((ids) => {
+    fs.get<ID[]>(`/role/${record.id}/permissions`).then((ids) => {
       checkedKeys.value = ids;
       permOpen.value = true;
     });
@@ -295,7 +309,7 @@ function onAssignGroup(record: Role) {
   groupCheckedIds.value = [];
   fs.get<PermissionGroup[]>('/permission-group/all').then((groups) => {
     allGroups.value = groups;
-    fs.get<number[]>(`/role/${record.id}/groups`).then((ids) => {
+    fs.get<ID[]>(`/role/${record.id}/groups`).then((ids) => {
       groupCheckedIds.value = ids;
       groupOpen.value = true;
     });

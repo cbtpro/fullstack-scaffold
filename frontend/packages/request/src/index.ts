@@ -145,6 +145,14 @@ export function createRequest(config: RequestConfig = {}): FsRequest {
         const message = body?.message ?? (status === 401 ? '未登录或token无效' : '无权限访问');
         return Promise.reject(new FsBusinessError(message, status));
       }
+      // HTTP 429：网关登录限流（令牌桶耗尽）。网关默认返回空 body，
+      // 这里补统一提示，并走业务错误回调，避免落成「网络异常」误导用户
+      if (status === 429) {
+        const body = error.response?.data as ApiResponse | undefined;
+        const limited = new FsBusinessError(body?.message ?? '操作过于频繁，请稍后再试', status);
+        config.onBusinessError?.(limited);
+        return Promise.reject(limited);
+      }
       config.onNetworkError?.(error);
       return Promise.reject(error);
     },

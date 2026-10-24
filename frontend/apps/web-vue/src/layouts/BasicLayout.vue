@@ -23,10 +23,13 @@
           </span>
           <template #overlay>
             <a-menu @click="onAccountClick">
+              <a-menu-item key="profile">{{ t('menu.profile') }}</a-menu-item>
+              <a-menu-item key="change-password">{{ t('login.changePassword') }}</a-menu-item>
               <a-menu-item key="logout">{{ t('login.logout') }}</a-menu-item>
             </a-menu>
           </template>
         </a-dropdown>
+        <ChangePasswordModal :open="passwordOpen" @close="passwordOpen = false" />
       </a-layout-header>
       <a-layout-content class="content">
         <TabBar />
@@ -51,6 +54,7 @@ import { useAuthStore } from '@/store/auth';
 import { usePermission } from '@/composables/usePermission';
 import { MenuIcon } from '@/components/MenuIcon';
 import TabBar from '@/components/TabBar.vue';
+import ChangePasswordModal from '@/components/ChangePasswordModal.vue';
 import ForbiddenPage from '@/pages/error/Forbidden.vue';
 
 const { t } = useI18n();
@@ -60,6 +64,7 @@ const auth = useAuthStore();
 const user = computed(() => auth.user);
 const menus = ref<FsMenu[]>([]);
 const collapsed = ref(false);
+const passwordOpen = ref(false);
 
 // 菜单高亮按路径前缀匹配，三态页等子路由也能点亮所属菜单
 const selectedKeys = computed(() => {
@@ -133,15 +138,27 @@ onMounted(() => {
     });
 });
 
-watch(() => auth.user, (u) => {
-  if (u) fetchMenus();
-}, { immediate: false });
+watch(
+  () => auth.user,
+  (u) => {
+    if (u) fetchMenus();
+  },
+  { immediate: false },
+);
 
 function onMenuClick({ key }: { key: string }) {
   router.push(key);
 }
 
 function onAccountClick({ key }: { key: string }) {
+  if (key === 'profile') {
+    router.push('/profile');
+    return;
+  }
+  if (key === 'change-password') {
+    passwordOpen.value = true;
+    return;
+  }
   if (key !== 'logout') return;
   clearToken();
   auth.clear();

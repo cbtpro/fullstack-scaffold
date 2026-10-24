@@ -40,7 +40,9 @@
               <a-button size="small" @click="onEdit(record)">{{ t('common.edit') }}</a-button>
             </Permission>
             <Permission codes="permission-group:assign" fallback="disable">
-              <a-button size="small" @click="onAssign(record)">{{ t('permissionGroup.assignPermission') }}</a-button>
+              <a-button size="small" @click="onAssign(record)">{{
+                t('permissionGroup.assignPermission')
+              }}</a-button>
             </Permission>
             <Permission codes="permission-group:delete">
               <a-popconfirm
@@ -65,10 +67,18 @@
       destroy-on-close
     >
       <a-form ref="formRef" :model="form" layout="vertical">
-        <a-form-item :label="t('permissionGroup.code')" name="code" :rules="[{ required: true, message: t('permissionGroup.codeRequired') }]">
+        <a-form-item
+          :label="t('permissionGroup.code')"
+          name="code"
+          :rules="[{ required: true, message: t('permissionGroup.codeRequired') }]"
+        >
           <a-input v-model:value="form.code" />
         </a-form-item>
-        <a-form-item :label="t('permissionGroup.name')" name="name" :rules="[{ required: true, message: t('permissionGroup.nameRequired') }]">
+        <a-form-item
+          :label="t('permissionGroup.name')"
+          name="name"
+          :rules="[{ required: true, message: t('permissionGroup.nameRequired') }]"
+        >
           <a-input v-model:value="form.name" />
         </a-form-item>
         <a-form-item :label="t('permissionGroup.sort')" name="sort">
@@ -94,12 +104,7 @@
       width="520px"
       destroy-on-close
     >
-      <a-tree
-        checkable
-        :tree-data="treeData"
-        v-model:checkedKeys="checkedKeys"
-        default-expand-all
-      />
+      <a-tree checkable :tree-data="treeData" v-model:checkedKeys="checkedKeys" default-expand-all />
     </a-modal>
   </a-card>
 </template>
@@ -112,11 +117,18 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { message } from 'ant-design-vue';
-import type { PageResult, Permission as PermissionItem, PermissionGroup } from '@fs/types';
+import type { ID, PageResult, Permission as PermissionItem, PermissionGroup } from '@fs/types';
 import { fs } from '@/request';
 import Permission from '@/components/permission/Permission.vue';
 import ImeInput from '@/components/ImeInput.vue';
 import { useDebounceSearch } from '@/composables/useDebounceSearch';
+
+/** antd Tree 的节点结构：扁平权限列表按 parentId 组装成该形状 */
+interface GroupTreeNode {
+  key: ID;
+  title: string;
+  children: GroupTreeNode[];
+}
 
 const { t } = useI18n();
 const loading = ref(false);
@@ -139,7 +151,11 @@ const columns = computed(() => [
   { title: t('permissionGroup.code'), dataIndex: 'code', width: 160 },
   { title: t('permissionGroup.name'), dataIndex: 'name' },
   { title: t('permissionGroup.sort'), dataIndex: 'sort', width: 80 },
-  { title: t('permissionGroup.description'), dataIndex: 'description', customRender: ({ record }: any) => record.description ?? '-' },
+  {
+    title: t('permissionGroup.description'),
+    dataIndex: 'description',
+    customRender: ({ record }: { record: PermissionGroup }) => record.description ?? '-',
+  },
   { title: t('permissionGroup.status'), dataIndex: 'status', width: 90 },
   { title: t('permissionGroup.createTime'), dataIndex: 'createTime', width: 180 },
   { title: t('common.operation'), key: '__op', width: 240 },
@@ -152,9 +168,9 @@ const pagination = computed(() => ({
   showTotal: (total: number) => t('user.total', { count: total }),
 }));
 
-function buildTree(list: PermissionItem[]): any[] {
-  const map = new Map<number, any>();
-  const roots: any[] = [];
+function buildTree(list: PermissionItem[]): GroupTreeNode[] {
+  const map = new Map<ID, GroupTreeNode>();
+  const roots: GroupTreeNode[] = [];
   list.forEach((p) => map.set(p.id, { key: p.id, title: `${p.name} (${p.code})`, children: [] }));
   list.forEach((p) => {
     const node = map.get(p.id)!;
@@ -244,7 +260,7 @@ function onAssign(record: PermissionGroup) {
   checkedKeys.value = [];
   fs.get<PermissionItem[]>('/permission/list').then((perms) => {
     allPerms.value = perms;
-    fs.get<number[]>(`/permission-group/${record.id}/permissions`).then((ids) => {
+    fs.get<ID[]>(`/permission-group/${record.id}/permissions`).then((ids) => {
       checkedKeys.value = ids;
       permOpen.value = true;
     });

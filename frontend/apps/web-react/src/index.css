@@ -7,8 +7,9 @@ body,
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
-    Arial, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
   background-color: #f0f2f5;
 }
 
@@ -44,4 +45,40 @@ a {
 
 .sticky-actions--inline {
   position: static;
+}
+
+/* 字典管理：左栏选中类型的行高亮，与右栏内容形成对应 */
+.dict-type-selected > td {
+  background-color: #e6f4ff !important;
+}
+
+/* 宽表在自身容器内横向滚动：列宽合计超过容器时不再撑出整页横向滚动条。
+   表格恰好填满容器时（如 1440 宽）此规则不产生滚动条，与未生效等同。 */
+.ant-table-content {
+  overflow-x: auto;
+}
+
+/* 窄屏：筛选栏折行，控件跟随可用宽度，而不是并排撑破卡片。
+   只作用于含输入/下拉的 Space，卡片标题行不受影响（与 Vue 端自定义标题栏布局一致）。 */
+@media (max-width: 768px) {
+  .ant-card-body > .ant-space:has(.ant-input, .ant-select, .ant-picker) {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  /* 搜索框、下拉等占满整行并可收缩；按钮保持原尺寸，同行排布 */
+  .ant-card-body
+    > .ant-space:has(.ant-input, .ant-select, .ant-picker)
+    > .ant-space-item:not(:has(.ant-btn)) {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  /* 页面给这些控件写死了 240 / 160 等内联宽度，需 !important 才能覆盖 */
+  .ant-card-body
+    > .ant-space:has(.ant-input, .ant-select, .ant-picker)
+    > .ant-space-item
+    > :is(.ant-input, .ant-input-affix-wrapper, .ant-select, .ant-picker) {
+    width: 100% !important;
+  }
 }

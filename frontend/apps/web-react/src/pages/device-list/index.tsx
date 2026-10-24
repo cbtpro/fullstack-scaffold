@@ -4,7 +4,17 @@
  * 已可信的设备不显示"设为可信"，已吊销的不显示"吊销"，避免无效操作。
  */
 import { useEffect, useRef, useState } from 'react';
-import { Button, Card, Popconfirm, Space, Table, Tag, Typography, message, type TableColumnsType } from 'antd';
+import {
+  Button,
+  Card,
+  Popconfirm,
+  Space,
+  Table,
+  Tag,
+  Typography,
+  message,
+  type TableColumnsType,
+} from 'antd';
 import { useTranslation } from 'react-i18next';
 import type { DeviceRiskLevel, PageResult, UserDevice } from '@fs/types';
 import { fs } from '@/request';
@@ -101,7 +111,12 @@ export default function DeviceListPage() {
         <Tag color={RISK_COLORS[level]}>{t(`device.${level.toLowerCase()}`)}</Tag>
       ),
     },
-    { title: t('device.lastLoginTime'), dataIndex: 'lastLoginTime', width: 180, render: (v: string) => v ?? '-' },
+    {
+      title: t('device.lastLoginTime'),
+      dataIndex: 'lastLoginTime',
+      width: 180,
+      render: (v: string) => v ?? '-',
+    },
     { title: t('device.createTime'), dataIndex: 'createTime', width: 180, render: (v: string) => v ?? '-' },
     {
       title: t('common.operation'),
@@ -125,7 +140,9 @@ export default function DeviceListPage() {
             cancelText={t('common.cancel')}
             onConfirm={() => onRevoke(record)}
           >
-            <Button danger size="small">{t('device.revoke')}</Button>
+            <Button danger size="small">
+              {t('device.revoke')}
+            </Button>
           </RevokeConfirm>
           <RemoveConfirm
             title={t('device.removeConfirm')}
@@ -133,7 +150,9 @@ export default function DeviceListPage() {
             cancelText={t('common.cancel')}
             onConfirm={() => onRemove(record)}
           >
-            <Button danger size="small">{t('device.remove')}</Button>
+            <Button danger size="small">
+              {t('device.remove')}
+            </Button>
           </RemoveConfirm>
         </Space>
       ),
@@ -162,11 +181,13 @@ export default function DeviceListPage() {
         <Button type="primary" onClick={() => scheduleSearch({ force: true })}>
           {t('common.search')}
         </Button>
-        <Button onClick={() => {
-          keywordRef.current = '';
-          setKeyword('');
-          scheduleSearch({ force: true });
-        }}>
+        <Button
+          onClick={() => {
+            keywordRef.current = '';
+            setKeyword('');
+            scheduleSearch({ force: true });
+          }}
+        >
           {t('common.reset')}
         </Button>
       </Space>

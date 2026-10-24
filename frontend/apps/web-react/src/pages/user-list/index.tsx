@@ -5,13 +5,26 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Card, Modal, Popconfirm, Select, Space, Table, Tag, Typography, message, type TableColumnsType } from 'antd';
+import {
+  Button,
+  Card,
+  Modal,
+  Popconfirm,
+  Select,
+  Space,
+  Table,
+  Tag,
+  Typography,
+  message,
+  type TableColumnsType,
+} from 'antd';
 import { useTranslation } from 'react-i18next';
-import type { PageResult, Role, User } from '@fs/types';
+import type { ID, PageResult, Role, User } from '@fs/types';
 import { fs } from '@/request';
 import { PermissionGuard, withPermission } from '@/components/permission';
 import { useDebounceSearch } from '@/hooks/useDebounceSearch';
 import { ImeInput } from '@/components/ImeInput';
+import ResetPasswordModal from '@/components/ResetPasswordModal';
 
 // 模块级定义包装组件，避免每次渲染创建新的组件类型导致子树反复卸载
 const ViewButton = withPermission({ codes: ['user:view'], fallback: 'disable' })(Button);
@@ -22,6 +35,7 @@ const EditButton = withPermission<User>({
   customFn: (_, record) => record?.status === 1,
 })(Button);
 const AssignRoleButton = withPermission({ codes: ['user:assign-role'], fallback: 'disable' })(Button);
+const ResetPasswordButton = withPermission({ codes: ['user:reset-password'], fallback: 'disable' })(Button);
 const DeleteConfirm = withPermission({ codes: ['user:delete'] })(Popconfirm);
 
 export default function UserListPage() {
@@ -46,8 +60,12 @@ export default function UserListPage() {
   // 分配角色弹窗
   const [roleOpen, setRoleOpen] = useState(false);
   const [roleUser, setRoleUser] = useState<User | null>(null);
-  const [roleIds, setRoleIds] = useState<number[]>([]);
+  const [roleIds, setRoleIds] = useState<ID[]>([]);
   const [roleOptions, setRoleOptions] = useState<Role[]>([]);
+
+  // 重置密码弹窗
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetUser, setResetUser] = useState<User | null>(null);
 
   // 后端 PageQuery 参数为 page/size（pageNum/pageSize 会被忽略导致翻页失效）
   const reload = (page = 1, size = 10, kw = keywordRef.current) => {
@@ -70,7 +88,7 @@ export default function UserListPage() {
 
   const onAssignRole = (record: User) => {
     setRoleUser(record);
-    Promise.all([fs.get<Role[]>('/role/all'), fs.get<number[]>(`/user/${record.id}/roles`)]).then(
+    Promise.all([fs.get<Role[]>('/role/all'), fs.get<ID[]>(`/user/${record.id}/roles`)]).then(
       ([roles, ids]) => {
         setRoleOptions(roles);
         setRoleIds(ids);
@@ -108,7 +126,7 @@ export default function UserListPage() {
     {
       title: t('common.operation'),
       key: '__op',
-      width: 200,
+      width: 260,
       render: (_, record) => (
         <Space>
           <ViewButton size="small" onClick={() => navigate(`/user/detail/${record.id}`)}>
@@ -120,6 +138,15 @@ export default function UserListPage() {
           <AssignRoleButton size="small" onClick={() => onAssignRole(record)}>
             {t('user.assignRole')}
           </AssignRoleButton>
+          <ResetPasswordButton
+            size="small"
+            onClick={() => {
+              setResetUser(record);
+              setResetOpen(true);
+            }}
+          >
+            {t('user.resetPassword')}
+          </ResetPasswordButton>
           <DeleteConfirm
             title={t('user.deleteConfirm')}
             okText={t('common.confirm')}
@@ -164,11 +191,13 @@ export default function UserListPage() {
         <Button type="primary" onClick={() => scheduleSearch({ force: true })}>
           {t('common.search')}
         </Button>
-        <Button onClick={() => {
-          keywordRef.current = '';
-          setKeyword('');
-          scheduleSearch({ force: true });
-        }}>
+        <Button
+          onClick={() => {
+            keywordRef.current = '';
+            setKeyword('');
+            scheduleSearch({ force: true });
+          }}
+        >
           {t('common.reset')}
         </Button>
       </Space>
@@ -200,10 +229,19 @@ export default function UserListPage() {
           style={{ width: '100%' }}
           placeholder={t('user.roles')}
           value={roleIds}
-          onChange={(v) => setRoleIds(v as number[])}
+          onChange={(v) => setRoleIds(v as ID[])}
           options={roleOptions.map((r) => ({ value: r.id, label: `${r.name} (${r.code})` }))}
         />
       </Modal>
+
+      <ResetPasswordModal
+        open={resetOpen}
+        user={resetUser}
+        onClose={() => {
+          setResetOpen(false);
+          setResetUser(null);
+        }}
+      />
     </Card>
   );
 }

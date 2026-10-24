@@ -18,7 +18,9 @@ export interface MockJwtPayload extends JWTPayload {
 }
 
 /** 签发 token。 */
-export async function signToken(payload: Omit<MockJwtPayload, 'iss' | 'aud' | 'iat' | 'exp'>): Promise<string> {
+export async function signToken(
+  payload: Omit<MockJwtPayload, 'iss' | 'aud' | 'iat' | 'exp'>,
+): Promise<string> {
   return new SignJWT({ ...payload })
     .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
     .setIssuedAt()

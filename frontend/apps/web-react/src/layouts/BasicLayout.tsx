@@ -9,6 +9,7 @@ import { authStore, useAuth } from '@/store/auth';
 import { usePermission } from '@/hooks/usePermission';
 import { MenuIcon } from '@/components/MenuIcon';
 import TabBar, { type RouteHandle } from '@/components/TabBar';
+import ChangePasswordModal from '@/components/ChangePasswordModal';
 import ForbiddenPage from '@/pages/error/Forbidden';
 
 const { Header, Sider, Content } = Layout;
@@ -57,8 +58,7 @@ export default function BasicLayout() {
   useEffect(() => {
     if (user) return;
     let active = true;
-    fs
-      .get<User>('/user/info')
+    fs.get<User>('/user/info')
       .then((u) => {
         if (active) setAuth({ user: u });
       })
@@ -77,8 +77,7 @@ export default function BasicLayout() {
       return;
     }
     let active = true;
-    fs
-      .get<FsMenu[]>('/user/menus')
+    fs.get<FsMenu[]>('/user/menus')
       .then((list) => {
         if (active) setMenus(list ?? []);
       })
@@ -98,14 +97,23 @@ export default function BasicLayout() {
     return items.concat(dynamic);
   }, [menus, t]);
 
-  const onLogout = ({ key }: { key: string }) => {
-    if (key !== 'logout') return;
-    clearToken();
-    useAuth.getState().clear();
-    navigate('/login', { replace: true });
+  const onAccountMenu = ({ key }: { key: string }) => {
+    if (key === 'logout') {
+      clearToken();
+      useAuth.getState().clear();
+      navigate('/login', { replace: true });
+    } else if (key === 'change-password') {
+      setPasswordOpen(true);
+    } else if (key === 'profile') {
+      navigate('/profile');
+    }
   };
 
-  const accountItems = [{ key: 'logout', label: t('login.logout') }];
+  const accountItems = [
+    { key: 'profile', label: t('menu.profile') },
+    { key: 'change-password', label: t('login.changePassword') },
+    { key: 'logout', label: t('login.logout') },
+  ];
 
   // 当前路径在 menuItems 中匹配的 key（取前缀，处理 /user/123 等子路径）
   const selectedKeys = useMemo(() => {
@@ -117,6 +125,7 @@ export default function BasicLayout() {
   }, [menuItems, location.pathname]);
 
   const [collapsed, setCollapsed] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
 
   // 布局级 403 守卫：路由 handle 声明 permission，当前用户无对应权限码时不渲染页面；
   // user 未就绪（权限集合为空）先渲染骨架等待，避免刷新直达被误判
@@ -171,15 +180,16 @@ export default function BasicLayout() {
               alignItems: 'center',
             }}
           >
-            <Dropdown menu={{ items: accountItems, onClick: onLogout }}>
+            <Dropdown menu={{ items: accountItems, onClick: onAccountMenu }}>
               <span style={{ cursor: 'pointer' }}>
-                {user ? user.nickname ?? user.username : <Skeleton.Input active size="small" />}
+                {user ? (user.nickname ?? user.username) : <Skeleton.Input active size="small" />}
               </span>
             </Dropdown>
+            <ChangePasswordModal open={passwordOpen} onClose={() => setPasswordOpen(false)} />
           </Header>
           <Content style={{ margin: 16 }}>
             <TabBar />
-            {user ? (forbidden ? <ForbiddenPage /> : <Outlet />) : <Skeleton active />}
+            {user ? forbidden ? <ForbiddenPage /> : <Outlet /> : <Skeleton active />}
           </Content>
         </Layout>
       </Layout>

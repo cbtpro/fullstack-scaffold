@@ -43,10 +43,7 @@ export interface DebouncedFunction<A extends unknown[]> {
   flush(): void;
 }
 
-export function debounce<A extends unknown[]>(
-  fn: (...args: A) => void,
-  wait = 300,
-): DebouncedFunction<A> {
+export function debounce<A extends unknown[]>(fn: (...args: A) => void, wait = 300): DebouncedFunction<A> {
   let timer: ReturnType<typeof setTimeout> | null = null;
   let lastArgs: A | null = null;
 
@@ -80,10 +77,7 @@ export interface ThrottledFunction<A extends unknown[]> {
   cancel(): void;
 }
 
-export function throttle<A extends unknown[]>(
-  fn: (...args: A) => void,
-  wait = 300,
-): ThrottledFunction<A> {
+export function throttle<A extends unknown[]>(fn: (...args: A) => void, wait = 300): ThrottledFunction<A> {
   let lastTime = 0;
   let timer: ReturnType<typeof setTimeout> | null = null;
 
@@ -141,11 +135,8 @@ function pad(n: number): string {
 /**
  * 格式化日期。支持时间戳、字符串、Date。token 用 YYYY MM DD HH mm ss 占位。
  */
-export function formatDateTime(
-  input: Date | string | number,
-  pattern: string = DATE_TIME_FORMAT,
-): string {
-  const date = input instanceof Date ? input : new Date(input);
+export function formatDateTime(input: Date | string | number, pattern: string = DATE_TIME_FORMAT): string {
+  const date = input instanceof Date ? input : new Date(normalizeDateTime(input));
   if (Number.isNaN(date.getTime())) return '';
   const map: Record<string, string> = {
     YYYY: String(date.getFullYear()),
@@ -160,6 +151,16 @@ export function formatDateTime(
 
 export function formatDate(input: Date | string | number): string {
   return formatDateTime(input, DATE_FORMAT);
+}
+
+/**
+ * 兼容后端 yyyy-MM-dd HH:mm:ss 的日期时间串。
+ * Safari 不解析以空格分隔的日期与时间，统一改为 ISO 的 T 分隔，
+ * 两端与所有浏览器都能正确取值。
+ */
+function normalizeDateTime(input: Date | string | number): Date | string | number {
+  if (typeof input !== 'string') return input;
+  return /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(input) ? input.replace(' ', 'T') : input;
 }
 
 /** 文件大小格式化。 */
@@ -179,7 +180,5 @@ export function formatFileSize(bytes: number, digits = 2): string {
 export function formatMoney(amount: number | string, digits = 2): string {
   const num = typeof amount === 'string' ? Number(amount) : amount;
   if (!Number.isFinite(num)) return '0.00';
-  return num
-    .toFixed(digits)
-    .replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return num.toFixed(digits).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }

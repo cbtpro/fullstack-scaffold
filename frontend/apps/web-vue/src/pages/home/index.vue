@@ -15,8 +15,6 @@ import { useAuthStore } from '@/store/auth';
 const { t } = useI18n();
 const auth = useAuthStore();
 const greeting = computed(() =>
-  auth.user
-    ? `${t('login.success')}，${auth.user.nickname ?? auth.user.username}`
-    : t('login.success'),
+  auth.user ? `${t('login.success')}，${auth.user.nickname ?? auth.user.username}` : t('login.success'),
 );
 </script>

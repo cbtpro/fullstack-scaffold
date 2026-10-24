@@ -68,17 +68,29 @@
         <a-form-item :label="t('permission.parentId')" name="parentId">
           <a-select v-model:value="form.parentId" :options="parentOptions" />
         </a-form-item>
-        <a-form-item :label="t('permission.type')" name="type" :rules="[{ required: true, message: t('permission.typeRequired') }]">
+        <a-form-item
+          :label="t('permission.type')"
+          name="type"
+          :rules="[{ required: true, message: t('permission.typeRequired') }]"
+        >
           <a-select v-model:value="form.type">
             <a-select-option :value="1">{{ t('permission.typeMenu') }}</a-select-option>
             <a-select-option :value="2">{{ t('permission.typeButton') }}</a-select-option>
             <a-select-option :value="3">{{ t('permission.typeApi') }}</a-select-option>
           </a-select>
         </a-form-item>
-        <a-form-item :label="t('permission.code')" name="code" :rules="[{ required: true, message: t('permission.codeRequired') }]">
+        <a-form-item
+          :label="t('permission.code')"
+          name="code"
+          :rules="[{ required: true, message: t('permission.codeRequired') }]"
+        >
           <a-input v-model:value="form.code" />
         </a-form-item>
-        <a-form-item :label="t('permission.name')" name="name" :rules="[{ required: true, message: t('permission.nameRequired') }]">
+        <a-form-item
+          :label="t('permission.name')"
+          name="name"
+          :rules="[{ required: true, message: t('permission.nameRequired') }]"
+        >
           <a-input v-model:value="form.name" />
         </a-form-item>
         <a-form-item :label="t('permission.path')" name="path">
@@ -111,7 +123,7 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { message } from 'ant-design-vue';
-import type { Permission as PermissionItem } from '@fs/types';
+import type { ID, Permission as PermissionItem } from '@fs/types';
 import { fs } from '@/request';
 import Permission from '@/components/permission/Permission.vue';
 import ImeInput from '@/components/ImeInput.vue';
@@ -127,7 +139,9 @@ const displayKeyword = ref('');
 
 const { scheduleSearch, cancelSearch } = useDebounceSearch({
   getValues: () => ({ keyword: keyword.value }),
-  onSearch: ({ keyword: kw }) => { displayKeyword.value = kw; },
+  onSearch: ({ keyword: kw }) => {
+    displayKeyword.value = kw;
+  },
   delay: 300,
 });
 
@@ -159,7 +173,7 @@ const form = reactive({
 const treeData = computed(() => {
   const kw = displayKeyword.value.trim().toLowerCase();
   const filtered = kw
-    ? list.value.filter(p => p.name.toLowerCase().includes(kw) || p.code.toLowerCase().includes(kw))
+    ? list.value.filter((p) => p.name.toLowerCase().includes(kw) || p.code.toLowerCase().includes(kw))
     : list.value;
   return buildTree(filtered);
 });
@@ -180,7 +194,7 @@ const columns = computed(() => [
 ]);
 
 function buildTree(items: PermissionItem[]): PermissionItem[] {
-  const map = new Map<number, PermissionItem>();
+  const map = new Map<ID, PermissionItem>();
   const roots: PermissionItem[] = [];
   items.forEach((p) => map.set(p.id, { ...p, children: [] }));
   items.forEach((p) => {
@@ -203,7 +217,17 @@ function reload() {
 
 function onCreate(parentId?: number) {
   editing.value = null;
-  Object.assign(form, { parentId: parentId ?? 0, type: 1, code: '', name: '', path: '', component: '', icon: '', sort: 0, status: 1 });
+  Object.assign(form, {
+    parentId: parentId ?? 0,
+    type: 1,
+    code: '',
+    name: '',
+    path: '',
+    component: '',
+    icon: '',
+    sort: 0,
+    status: 1,
+  });
   formOpen.value = true;
 }
 

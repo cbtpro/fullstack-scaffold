@@ -7,7 +7,8 @@
     "dev": "vite --port 5173",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --port 5173",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@fs/auth": "workspace:*",
@@ -26,11 +27,15 @@
     "zustand": "^4.5.5"
   },
   "devDependencies": {
+    "@fs/eslint-config": "workspace:*",
     "@fs/tsconfig": "workspace:*",
     "@types/node": "^20.16.11",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.3",
+    "eslint": "^10.13.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
     "typescript": "^5.5.4",
     "vite": "^5.4.10"
   }

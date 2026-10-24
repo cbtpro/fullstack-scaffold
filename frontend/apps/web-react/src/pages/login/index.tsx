@@ -60,11 +60,7 @@ export default function LoginPage() {
         <Typography.Title level={3} style={{ textAlign: 'center', marginBottom: 24 }}>
           {t('login.title')}
         </Typography.Title>
-        <Form
-          layout="vertical"
-          onFinish={onFinish}
-          initialValues={{ username: 'admin', password: '123456' }}
-        >
+        <Form layout="vertical" onFinish={onFinish} initialValues={{ username: 'admin', password: '123456' }}>
           <Form.Item
             name="username"
             label={t('login.username')}

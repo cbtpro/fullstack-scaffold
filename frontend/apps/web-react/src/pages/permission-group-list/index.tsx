@@ -24,7 +24,7 @@ import {
   type TreeDataNode,
 } from 'antd';
 import { useTranslation } from 'react-i18next';
-import type { PageResult, Permission, PermissionGroup } from '@fs/types';
+import type { ID, PageResult, Permission, PermissionGroup } from '@fs/types';
 import { fs } from '@/request';
 import { PermissionGuard, withPermission } from '@/components/permission';
 import { useDebounceSearch } from '@/hooks/useDebounceSearch';
@@ -36,7 +36,7 @@ const AssignButton = withPermission({ codes: ['permission-group:assign'], fallba
 
 /** 扁平权限列表 → antd Tree 数据 */
 function buildTree(list: Permission[]): TreeDataNode[] {
-  const map = new Map<number, TreeDataNode>();
+  const map = new Map<ID, TreeDataNode>();
   const roots: TreeDataNode[] = [];
   list.forEach((p) => {
     map.set(p.id, { key: p.id, title: `${p.name} (${p.code})`, children: [] });
@@ -54,7 +54,12 @@ function buildTree(list: Permission[]): TreeDataNode[] {
 
 export default function PermissionGroupListPage() {
   const { t } = useTranslation();
-  const [data, setData] = useState<PageResult<PermissionGroup>>({ list: [], total: 0, pageNum: 1, pageSize: 10 });
+  const [data, setData] = useState<PageResult<PermissionGroup>>({
+    list: [],
+    total: 0,
+    pageNum: 1,
+    pageSize: 10,
+  });
   const [loading, setLoading] = useState(false);
 
   const keywordRef = useRef('');
@@ -132,7 +137,7 @@ export default function PermissionGroupListPage() {
     setCheckedKeys([]);
     fs.get<Permission[]>('/permission/list').then((perms) => {
       setAllPerms(perms);
-      fs.get<number[]>(`/permission-group/${record.id}/permissions`).then((ids) => {
+      fs.get<ID[]>(`/permission-group/${record.id}/permissions`).then((ids) => {
         setCheckedKeys(ids);
         setPermOpen(true);
       });
@@ -217,11 +222,13 @@ export default function PermissionGroupListPage() {
         <Button type="primary" onClick={() => scheduleSearch({ force: true })}>
           {t('common.search')}
         </Button>
-        <Button onClick={() => {
-          keywordRef.current = '';
-          setKeyword('');
-          scheduleSearch({ force: true });
-        }}>
+        <Button
+          onClick={() => {
+            keywordRef.current = '';
+            setKeyword('');
+            scheduleSearch({ force: true });
+          }}
+        >
           {t('common.reset')}
         </Button>
       </Space>
@@ -249,10 +256,18 @@ export default function PermissionGroupListPage() {
         destroyOnClose
       >
         <Form form={form} layout="vertical">
-          <Form.Item name="code" label={t('permissionGroup.code')} rules={[{ required: true, message: t('permissionGroup.codeRequired') }]}>
+          <Form.Item
+            name="code"
+            label={t('permissionGroup.code')}
+            rules={[{ required: true, message: t('permissionGroup.codeRequired') }]}
+          >
             <Input />
           </Form.Item>
-          <Form.Item name="name" label={t('permissionGroup.name')} rules={[{ required: true, message: t('permissionGroup.nameRequired') }]}>
+          <Form.Item
+            name="name"
+            label={t('permissionGroup.name')}
+            rules={[{ required: true, message: t('permissionGroup.nameRequired') }]}
+          >
             <Input />
           </Form.Item>
           <Form.Item name="sort" label={t('permissionGroup.sort')}>

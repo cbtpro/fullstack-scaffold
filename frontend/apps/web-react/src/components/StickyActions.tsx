@@ -11,13 +11,13 @@
  */
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 
-export type StickyState = 'hidden' | 'sticky' | 'inline';
+type StickyState = 'hidden' | 'sticky' | 'inline';
 
 /**
  * 状态判定规则：锚点可见优先恢复文档流；未发生过滚动保持隐藏；
  * 滚动后吸附。修改规则时统一改这里，保持状态机单一来源。
  */
-export function resolveStickyState(anchorVisible: boolean, hasScrolled: boolean): StickyState {
+function resolveStickyState(anchorVisible: boolean, hasScrolled: boolean): StickyState {
   if (anchorVisible) return 'inline';
   return hasScrolled ? 'sticky' : 'hidden';
 }

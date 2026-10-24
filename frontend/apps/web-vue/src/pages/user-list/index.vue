@@ -40,6 +40,9 @@
             <Permission codes="user:assign-role" fallback="disable">
               <a-button size="small" @click="onAssignRole(record)">{{ t('user.assignRole') }}</a-button>
             </Permission>
+            <Permission codes="user:reset-password" fallback="disable">
+              <a-button size="small" @click="onResetPassword(record)">{{ t('user.resetPassword') }}</a-button>
+            </Permission>
             <!-- Popconfirm 整体包进权限组件，无权限时触发器与确认层一起卸载 -->
             <Permission codes="user:delete">
               <a-popconfirm
@@ -71,6 +74,8 @@
         :options="roleOptions.map((r) => ({ value: r.id, label: `${r.name} (${r.code})` }))"
       />
     </a-modal>
+
+    <ResetPasswordModal :open="resetOpen" :user="resetUser" @close="onResetClose" />
   </a-card>
 </template>
 
@@ -84,10 +89,11 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { message } from 'ant-design-vue';
-import type { PageResult, Role, User } from '@fs/types';
+import type { ID, PageResult, Role, User } from '@fs/types';
 import { fs } from '@/request';
 import Permission from '@/components/permission/Permission.vue';
 import ImeInput from '@/components/ImeInput.vue';
+import ResetPasswordModal from '@/components/ResetPasswordModal.vue';
 import { useDebounceSearch } from '@/composables/useDebounceSearch';
 
 const { t } = useI18n();
@@ -103,13 +109,21 @@ const data = reactive<PageResult<User>>({
 // 分配角色弹窗
 const roleOpen = ref(false);
 const roleUser = ref<User | null>(null);
-const roleIds = ref<number[]>([]);
+const roleIds = ref<ID[]>([]);
 const roleOptions = ref<Role[]>([]);
+
+// 重置密码弹窗
+const resetOpen = ref(false);
+const resetUser = ref<User | null>(null);
 
 const columns = computed(() => [
   { title: 'ID', dataIndex: 'id', width: 80 },
   { title: t('login.username'), dataIndex: 'username' },
-  { title: t('user.nickname'), dataIndex: 'nickname', customRender: ({ text }: { text?: string }) => text ?? '-' },
+  {
+    title: t('user.nickname'),
+    dataIndex: 'nickname',
+    customRender: ({ text }: { text?: string }) => text ?? '-',
+  },
   { title: t('user.email'), dataIndex: 'email', customRender: ({ text }: { text?: string }) => text ?? '-' },
   {
     title: t('user.roles'),
@@ -120,11 +134,10 @@ const columns = computed(() => [
     title: t('user.status'),
     dataIndex: 'status',
     width: 90,
-    customRender: ({ text }: { text?: number }) =>
-      text === 1 ? t('user.enabled') : t('user.disabled'),
+    customRender: ({ text }: { text?: number }) => (text === 1 ? t('user.enabled') : t('user.disabled')),
   },
   { title: t('user.createTime'), dataIndex: 'createTime', width: 180 },
-  { title: t('common.operation'), key: '__op', width: 200 },
+  { title: t('common.operation'), key: '__op', width: 260 },
 ]);
 
 const pagination = computed(() => ({
@@ -197,7 +210,7 @@ function onDelete(record: User) {
 
 function onAssignRole(record: User) {
   roleUser.value = record;
-  Promise.all([fs.get<Role[]>('/role/all'), fs.get<number[]>(`/user/${record.id}/roles`)]).then(
+  Promise.all([fs.get<Role[]>('/role/all'), fs.get<ID[]>(`/user/${record.id}/roles`)]).then(
     ([roles, ids]) => {
       roleOptions.value = roles;
       roleIds.value = ids;
@@ -212,6 +225,16 @@ function onSaveRole() {
     message.success(t('user.saveSuccess'));
     roleOpen.value = false;
   });
+}
+
+function onResetPassword(record: User) {
+  resetUser.value = record;
+  resetOpen.value = true;
+}
+
+function onResetClose() {
+  resetOpen.value = false;
+  resetUser.value = null;
 }
 
 onMounted(() => reload(1, 10));
