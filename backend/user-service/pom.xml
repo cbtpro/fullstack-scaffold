@@ -25,6 +25,16 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
+        <!-- 可观测性：Prometheus 指标暴露 + Brave 桥接的链路追踪（traceId 贯穿日志、跨服务传播） -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-tracing-bridge-brave</artifactId>
+        </dependency>
+
         <!-- 鉴权 Starter：JWT（默认）或 SA_TOKEN，改 auth.type 即可切换 -->
         <dependency>
             <groupId>com.scaffold</groupId>
@@ -35,6 +45,12 @@
         <dependency>
             <groupId>com.scaffold</groupId>
             <artifactId>captcha-starter</artifactId>
+        </dependency>
+
+        <!-- 全局 ID Starter：统一 Snowflake 主键 + Worker ID 管理 + 全局序列分配器 -->
+        <dependency>
+            <groupId>com.scaffold</groupId>
+            <artifactId>id-starter</artifactId>
         </dependency>
 
         <!-- Sa-Token：仅 auth.type=SA_TOKEN 时启用。
@@ -63,6 +79,17 @@
             <artifactId>mysql-connector-j</artifactId>
         </dependency>
 
+        <!-- Flyway：表结构版本管理，V1 为历史 init.sql 的基线，后续表演出走 V2+ -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+        <!-- Flyway 9.16 起 MySQL 方言独立为 flyway-mysql，MySQL 8 必需 -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-mysql</artifactId>
+        </dependency>
+
         <!-- Redis（Sa-Token 会话存储可选；JWT 模式下用于缓存扩展点） -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -86,6 +113,29 @@
             <artifactId>lombok</artifactId>
             <scope>provided</scope>
         </dependency>
+
+        <!-- 测试 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- Testcontainers：本机 Docker 29.x 与 TC 1.19.x 的 docker-java 客户端 API
+             版本协商失败（/_ping 返回 400），集成测试改用独立 MySQL 实例。
+             若部署环境 Docker 版本匹配，取消注释即可切回 Testcontainers。
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${testcontainers.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>mysql</artifactId>
+            <version>${testcontainers.version}</version>
+            <scope>test</scope>
+        </dependency>
+        -->
     </dependencies>
 
     <build>
@@ -94,6 +144,16 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <!-- macOS 外置卷（exFAT）会为每个写入的文件生成 ._* AppleDouble 副本，
+                         其中 ._Xxx.class 会被 Spring 类路径扫描当作非法 class 解析导致启动失败。
+                         开启该开关让扫描阶段跳过无法解析的文件。 -->
+                    <argLine>-Dspring.classformat.ignore=true</argLine>
+                </configuration>
             </plugin>
         </plugins>
     </build>

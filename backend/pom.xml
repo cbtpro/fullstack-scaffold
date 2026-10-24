@@ -15,14 +15,23 @@
         <module>common</module>
         <module>auth-starter</module>
         <module>captcha-starter</module>
+        <module>id-starter</module>
         <module>gateway-service</module>
         <module>user-service</module>
+        <module>../docker/web-react</module>
+        <module>../docker/web-vue</module>
     </modules>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>17</java.version>
+        <!-- Docker 操作仅显式启用 profile 时执行；validate 不编译业务代码。 -->
+        <docker.action>status</docker.action>
+        <docker.phase>validate</docker.phase>
+        <!-- 留空表示优先采用 docker/.env.<平台> 里的 FS_DATA_PATH；显式 -Ddocker.data.dir 可覆盖 -->
+        <docker.data.dir></docker.data.dir>
+        <docker.wait.timeout>240</docker.wait.timeout>
         <maven.compiler.release>17</maven.compiler.release>
         <!-- Spring Boot 3 / Spring Framework 6 要求参数名可反射，否则 @RequestParam(required=false) String name
              会因找不到参数名抛 IllegalArgumentException，被 SecurityFilterChain 转成 403。
@@ -42,6 +51,9 @@
         <knife4j.version>4.4.0</knife4j.version>
         <lombok.version>1.18.32</lombok.version>
         <hutool.version>5.8.27</hutool.version>
+        <maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
+        <!-- Spring Boot 3.2.5 BOM 默认 1.19.7，本地仓库仅有 1.19.8 的完整产物 -->
+        <testcontainers.version>1.19.8</testcontainers.version>
     </properties>
 
     <dependencyManagement>
@@ -82,18 +94,28 @@
                 <artifactId>auth-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            <dependency>
-                <groupId>com.scaffold</groupId>
-                <artifactId>captcha-starter</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+        <dependency>
+            <groupId>com.scaffold</groupId>
+            <artifactId>captcha-starter</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.scaffold</groupId>
+            <artifactId>id-starter</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
-            <!-- MyBatis-Plus（已兼容 Spring Boot 3.x） -->
-            <dependency>
-                <groupId>com.baomidou</groupId>
-                <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
-                <version>${mybatis-plus.version}</version>
-            </dependency>
+        <!-- MyBatis-Plus（已兼容 Spring Boot 3.x） -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+            <version>${mybatis-plus.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-core</artifactId>
+            <version>${mybatis-plus.version}</version>
+        </dependency>
 
             <!-- Sa-Token（Spring Boot 3 starter） -->
             <dependency>
@@ -158,6 +180,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.13.0</version>
                     <configuration>
                         <release>${java.version}</release>
                         <encoding>${project.build.sourceEncoding}</encoding>
@@ -184,8 +207,54 @@
                         </execution>
                     </executions>
                 </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <!-- 父 pom 不是 spring-boot-starter-parent，插件版本无人管理，必须显式指定 -->
+                    <version>${maven-surefire-plugin.version}</version>
+                    <configuration>
+                        <!-- macOS 外置卷（exFAT）会为写入的每个文件生成 ._* AppleDouble 副本。
+                             其中 ._XxxTest.class 会被 surefire 的类扫描当成测试类，
+                             报 "Unable to create test class 'com.scaffold.xxx.._XxxTest'" 并中断构建。
+                             这里从源头排除，而不是每次构建前手工 find -delete。 -->
+                        <excludes>
+                            <exclude>**/._*</exclude>
+                        </excludes>
+                    </configuration>
+                </plugin>
             </plugins>
         </pluginManagement>
     </build>
+
+    <profiles>
+        <profile>
+            <id>docker</id>
+            <build><plugins><plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.5.0</version>
+                <executions><execution>
+                    <id>docker-lifecycle</id>
+                    <phase>${docker.phase}</phase>
+                    <goals><goal>exec</goal></goals>
+                    <configuration>
+                        <executable>bash</executable>
+                        <arguments>
+                            <argument>-c</argument>
+                            <!-- 从当前模块向上查找部署入口，支持父/子 POM 独立运行。 -->
+                            <argument>p="$(cd "$1" &amp;&amp; pwd)"; while [ ! -f "$p/docker/manage.sh" ] &amp;&amp; [ "$p" != "/" ]; do p="$(dirname "$p")"; done; exec bash "$p/docker/manage.sh" "${@:2}"</argument>
+                            <argument>docker-manage</argument>
+                            <argument>${project.basedir}</argument>
+                            <argument>--module</argument><argument>${project.artifactId}</argument>
+                            <argument>--root-module</argument><argument>${session.topLevelProject.artifactId}</argument>
+                            <argument>--action</argument><argument>${docker.action}</argument>
+                            <argument>--data-dir</argument><argument>${docker.data.dir}</argument>
+                            <argument>--wait-timeout</argument><argument>${docker.wait.timeout}</argument>
+                        </arguments>
+                    </configuration>
+                </execution></executions>
+            </plugin></plugins></build>
+        </profile>
+    </profiles>
 
 </project>

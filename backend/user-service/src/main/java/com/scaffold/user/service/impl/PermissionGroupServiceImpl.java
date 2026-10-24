@@ -7,7 +7,9 @@ import com.scaffold.common.api.PageQuery;
 import com.scaffold.common.api.PageResult;
 import com.scaffold.common.api.ResultCode;
 import com.scaffold.common.exception.BizException;
+import com.scaffold.id.SnowflakeIdGenerator;
 import com.scaffold.user.entity.PermissionGroup;
+import com.scaffold.user.entity.PermissionGroupItem;
 import com.scaffold.user.enums.EnableStatus;
 import com.scaffold.user.mapper.PermissionGroupItemMapper;
 import com.scaffold.user.mapper.PermissionGroupMapper;
@@ -17,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -32,6 +35,7 @@ public class PermissionGroupServiceImpl implements PermissionGroupService {
     private final PermissionGroupMapper permissionGroupMapper;
     private final PermissionGroupItemMapper permissionGroupItemMapper;
     private final RolePermissionGroupMapper rolePermissionGroupMapper;
+    private final SnowflakeIdGenerator idGenerator;
 
     @Override
     public PageResult<PermissionGroup> page(PageQuery query, String keyword) {
@@ -110,9 +114,15 @@ public class PermissionGroupServiceImpl implements PermissionGroupService {
     public void assignPermissions(Long groupId, List<Long> permissionIds) {
         getById(groupId);
         permissionGroupItemMapper.deleteByGroupId(groupId);
-        if (permissionIds != null && !permissionIds.isEmpty()) {
-            permissionGroupItemMapper.batchInsert(groupId, permissionIds);
+        if (permissionIds == null || permissionIds.isEmpty()) {
+            return;
         }
+        List<Long> ids = idGenerator.nextIds(permissionIds.size());
+        List<PermissionGroupItem> rows = new ArrayList<>(permissionIds.size());
+        for (int i = 0; i < permissionIds.size(); i++) {
+            rows.add(new PermissionGroupItem(ids.get(i), groupId, permissionIds.get(i)));
+        }
+        permissionGroupItemMapper.insertBatch(rows);
     }
 
     private boolean existsCode(String code, Long excludeId) {

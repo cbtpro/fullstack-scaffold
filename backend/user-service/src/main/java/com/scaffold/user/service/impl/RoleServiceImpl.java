@@ -7,7 +7,10 @@ import com.scaffold.common.api.PageQuery;
 import com.scaffold.common.api.PageResult;
 import com.scaffold.common.api.ResultCode;
 import com.scaffold.common.exception.BizException;
+import com.scaffold.id.SnowflakeIdGenerator;
 import com.scaffold.user.entity.Role;
+import com.scaffold.user.entity.RolePermission;
+import com.scaffold.user.entity.RolePermissionGroup;
 import com.scaffold.user.enums.EnableStatus;
 import com.scaffold.user.mapper.RoleMapper;
 import com.scaffold.user.mapper.RolePermissionGroupMapper;
@@ -17,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -31,6 +35,7 @@ public class RoleServiceImpl implements RoleService {
     private final RoleMapper roleMapper;
     private final RolePermissionMapper rolePermissionMapper;
     private final RolePermissionGroupMapper rolePermissionGroupMapper;
+    private final SnowflakeIdGenerator idGenerator;
 
     @Override
     public PageResult<Role> page(PageQuery query, String keyword) {
@@ -108,9 +113,15 @@ public class RoleServiceImpl implements RoleService {
     public void assignPermissions(Long roleId, List<Long> permissionIds) {
         getById(roleId);
         rolePermissionMapper.deleteByRoleId(roleId);
-        if (permissionIds != null && !permissionIds.isEmpty()) {
-            rolePermissionMapper.batchInsert(roleId, permissionIds);
+        if (permissionIds == null || permissionIds.isEmpty()) {
+            return;
         }
+        List<Long> ids = idGenerator.nextIds(permissionIds.size());
+        List<RolePermission> rows = new ArrayList<>(permissionIds.size());
+        for (int i = 0; i < permissionIds.size(); i++) {
+            rows.add(new RolePermission(ids.get(i), roleId, permissionIds.get(i)));
+        }
+        rolePermissionMapper.insertBatch(rows);
     }
 
     @Override
@@ -126,9 +137,15 @@ public class RoleServiceImpl implements RoleService {
     public void assignGroups(Long roleId, List<Long> groupIds) {
         getById(roleId);
         rolePermissionGroupMapper.deleteByRoleId(roleId);
-        if (groupIds != null && !groupIds.isEmpty()) {
-            rolePermissionGroupMapper.batchInsert(roleId, groupIds);
+        if (groupIds == null || groupIds.isEmpty()) {
+            return;
         }
+        List<Long> ids = idGenerator.nextIds(groupIds.size());
+        List<RolePermissionGroup> rows = new ArrayList<>(groupIds.size());
+        for (int i = 0; i < groupIds.size(); i++) {
+            rows.add(new RolePermissionGroup(ids.get(i), roleId, groupIds.get(i)));
+        }
+        rolePermissionGroupMapper.insertBatch(rows);
     }
 
     private boolean existsCode(String code, Long excludeId) {

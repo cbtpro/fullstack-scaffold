@@ -66,7 +66,10 @@ public class JwtAuthManager implements AuthManager {
         if (user == null) {
             throw new BizException(ResultCode.UNAUTHORIZED, "用户不存在");
         }
-        if (user.getPassword() == null || !encoder.matches(req.getPassword(), user.getPassword())) {
+        // 请求体可能不带密码：BCrypt 的 matches 不接受 null 入参（抛 IllegalArgumentException），
+        // 而缺凭据属于登录失败，应当是 401 而不是 500
+        if (req.getPassword() == null || user.getPassword() == null
+                || !encoder.matches(req.getPassword(), user.getPassword())) {
             throw new BizException(ResultCode.UNAUTHORIZED, "密码错误");
         }
         // 签发前扩展点：设备登记/风控校验等由实现方完成，无实现时跳过

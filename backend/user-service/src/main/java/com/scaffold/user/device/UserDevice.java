@@ -13,11 +13,18 @@ import java.time.LocalDateTime;
  *
  * <p>该表只追加、按 id 物理移除，无 status/update_time/deleted 列，
  * 因此仅继承 {@link BaseEntity}（id + createTime）。
+ *
+ * <p>{@code sortSeq} 来自统一序列分配器：设备列表是审计类数据，
+ * 需要稳定的「注册顺序」而不是受时钟偏差影响的 ID 趋势顺序。
+ * 序号代表分配顺序，不代表事务提交顺序。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("user_device")
 public class UserDevice extends BaseEntity {
+
+    /** 全局严格递增序号，由 GlobalSequenceAllocator 分配 */
+    private Long sortSeq;
 
     /** 用户 id */
     private Long userId;

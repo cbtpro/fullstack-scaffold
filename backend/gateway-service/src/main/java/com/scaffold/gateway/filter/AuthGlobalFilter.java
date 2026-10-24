@@ -63,7 +63,10 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getPath().value();
         if (isPermitted(path)) {
-            return chain.filter(exchange);
+            // 放行路径同样剥离伪造内部头并写入网关注入的共享密钥，
+            // 否则下游 GatewayTrustFilter 会把合法网关流量误判为直连
+            ServerHttpRequest trusted = trusted(exchange.getRequest());
+            return chain.filter(exchange.mutate().request(trusted).build());
         }
 
         String header = exchange.getRequest().getHeaders().getFirst(authProperties.getTokenHeader());
@@ -83,7 +86,9 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             if (!DeviceBindingMatcher.matches(authProperties, user, requestFingerprint)) {
                 return unauthorized(exchange, "设备指纹校验失败，请重新登录");
             }
-            ServerHttpRequest mutated = exchange.getRequest().mutate()
+            // 先剥离客户端伪造的内部头，再写入网关注入的共享密钥头，
+            // 最后附加鉴权后的可信用户标识
+            ServerHttpRequest mutated = trusted(exchange.getRequest()).mutate()
                     .header(USER_ID_HEADER, String.valueOf(user.getId()))
                     .header(USERNAME_HEADER, user.getUsername() == null ? "" : user.getUsername())
                     .build();
@@ -91,6 +96,38 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
         } catch (BizException e) {
             return unauthorized(exchange, e.getMessage());
         }
+    }
+
+    /**
+     * 剥离外部请求可能伪造的内部头（用户标识头、网关共享密钥头），
+     * 再写入网关自己的共享密钥，供下游 GatewayTrustFilter 校验信任来源。
+     * 这些头只允许由网关注入，绝不允许从客户端透传。
+     */
+    private ServerHttpRequest trusted(ServerHttpRequest request) {
+        String trustHeader = authProperties.getGateway().getTrustHeader();
+        String trustSecret = authProperties.getGateway().getTrustSecret();
+        return sanitize(request).mutate()
+                .headers(headers -> {
+                    if (trustSecret != null && !trustSecret.isEmpty()) {
+                        headers.set(trustHeader, trustSecret);
+                    }
+                })
+                .build();
+    }
+
+    /**
+     * 剥离外部请求可能伪造的内部头（用户标识头、网关共享密钥头）。
+     * 这些头只允许由网关注入，绝不允许从客户端透传。
+     */
+    private ServerHttpRequest sanitize(ServerHttpRequest request) {
+        String trustHeader = authProperties.getGateway().getTrustHeader();
+        return request.mutate()
+                .headers(headers -> {
+                    headers.remove(USER_ID_HEADER);
+                    headers.remove(USERNAME_HEADER);
+                    headers.remove(trustHeader);
+                })
+                .build();
     }
 
     private boolean isPermitted(String path) {

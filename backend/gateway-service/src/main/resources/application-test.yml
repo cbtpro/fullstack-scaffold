@@ -1,0 +1,19 @@
+# 测试环境：只替换 Redis 地址与密钥，注册中心保持启用
+# ——服务发现是网关的核心语义，测试若把 Nacos 关掉，路由行为就与实际部署不一致了。
+spring:
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:127.0.0.1:8848}
+        namespace: ${NACOS_NAMESPACE:public}
+
+auth:
+  jwt:
+    secret: ${AUTH_JWT_SECRET:fullstack-scaffold-test-secret-please-change-it-32bytes}
+  gateway:
+    trust-secret: ${AUTH_GATEWAY_SECRET:fullstack-scaffold-test-gateway-secret}

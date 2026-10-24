@@ -1,5 +1,7 @@
 package com.scaffold.user.mapper;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.scaffold.user.entity.RolePermissionGroup;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
@@ -9,11 +11,14 @@ import org.apache.ibatis.annotations.Select;
 import java.util.List;
 
 /**
- * 角色-权限组关联 Mapper。直接操作 {@code sys_role_permission_group} 表，无对应实体（纯关联表）。
+ * 角色-权限组关联 Mapper。映射 {@code sys_role_permission_group} 表。
  * 动态绑定：角色关联权限组后，解析时 UNION 组内权限（见 PermissionMapper）。
+ *
+ * <p>该表不再使用自增主键，批量插入必须显式带 id，
+ * id 由调用方用统一 Snowflake 发号器生成后写入实体。
  */
 @Mapper
-public interface RolePermissionGroupMapper {
+public interface RolePermissionGroupMapper extends BaseMapper<RolePermissionGroup> {
 
     /** 查询角色已绑定的权限组 id 列表 */
     @Select("SELECT group_id FROM sys_role_permission_group WHERE role_id = #{roleId}")
@@ -27,12 +32,12 @@ public interface RolePermissionGroupMapper {
     @Delete("DELETE FROM sys_role_permission_group WHERE group_id = #{groupId}")
     int deleteByGroupId(@Param("groupId") Long groupId);
 
-    /** 批量插入角色-权限组关联 */
+    /** 批量插入角色-权限组关联。id 由调用方预先生成。 */
     @Insert("<script>" +
-            "INSERT INTO sys_role_permission_group (role_id, group_id) VALUES " +
-            "<foreach collection='groupIds' item='groupId' separator=','>" +
-            "(#{roleId}, #{groupId})" +
+            "INSERT INTO sys_role_permission_group (id, role_id, group_id) VALUES " +
+            "<foreach collection='list' item='e' separator=','>" +
+            "(#{e.id}, #{e.roleId}, #{e.groupId})" +
             "</foreach>" +
             "</script>")
-    int batchInsert(@Param("roleId") Long roleId, @Param("groupIds") List<Long> groupIds);
+    int insertBatch(@Param("list") List<RolePermissionGroup> list);
 }

@@ -1,0 +1,20 @@
+# 开发环境：Redis / Nacos 默认指向本机，不设环境变量即可启动。
+spring:
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:127.0.0.1:8848}
+        namespace: ${NACOS_NAMESPACE:public}
+
+auth:
+  jwt:
+    # 内置默认密钥仅限开发环境；非开发 profile 下 JwtSecretValidator 会拒绝启动
+    secret: ${AUTH_JWT_SECRET:fullstack-scaffold-default-secret-please-change-it-32bytes}
+  gateway:
+    # 网关转发时注入下游的共享密钥头，需与 user-service 保持一致
+    trust-secret: ${AUTH_GATEWAY_SECRET:fullstack-scaffold-dev-gateway-secret}

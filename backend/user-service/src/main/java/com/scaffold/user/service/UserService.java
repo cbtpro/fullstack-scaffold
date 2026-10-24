@@ -47,6 +47,36 @@ public interface UserService extends AuthUserLoader {
     void assignRoles(Long userId, java.util.List<Long> roleIds);
 
     /**
+     * 本人查看资料。与 {@link #getById} 的区别是语义限定为「当前登录人」，
+     * 调用方从 token 取 id 后传入，不接受任意 id。
+     */
+    User getProfile(Long userId);
+
+    /**
+     * 本人维护资料：仅允许修改昵称、邮箱、手机。
+     *
+     * @param userId 当前登录用户 id（由 token 解析）
+     */
+    User updateProfile(Long userId, com.scaffold.user.dto.ProfileUpdateRequest request);
+
+    /**
+     * 本人修改密码：校验原密码后更新为新密码。
+     *
+     * @param userId      当前登录用户 id
+     * @param oldPassword 原密码（明文，由调用方通过 HTTPS 传输）
+     * @param newPassword 新密码（明文）
+     */
+    void changePassword(Long userId, String oldPassword, String newPassword);
+
+    /**
+     * 管理员重置指定用户密码（无需原密码）。
+     *
+     * @param userId      目标用户 id
+     * @param newPassword 新密码（明文）
+     */
+    void resetPassword(Long userId, String newPassword);
+
+    /**
      * 按用户名查询（含密码），供登录校验。{@link AuthUserLoader} 契约。
      */
     @Override

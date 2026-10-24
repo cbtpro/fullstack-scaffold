@@ -1,0 +1,67 @@
+# 生产环境：外部依赖与密钥必须由环境变量显式提供，缺失即启动失败（fail-fast），
+# 避免本机默认值（弱密钥、127.0.0.1）在生产被静默启用。
+spring:
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE:fs_user}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER}
+    password: ${MYSQL_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR}
+        namespace: ${NACOS_NAMESPACE:public}
+
+scaffold:
+  id:
+    # 多实例部署必须显式指定且互不相同，否则 snowflake 发号会撞号
+    worker-id: ${SNOWFLAKE_WORKER_ID}
+  # 必须由外部注入的配置项：缺失或未解析时启动即失败（见 RequiredPropertiesEnvironmentPostProcessor）
+  required-properties:
+    - spring.datasource.url
+    - spring.data.redis.host
+    - spring.cloud.nacos.discovery.server-addr
+    - scaffold.id.worker-id
+    - auth.jwt.secret
+    - auth.gateway.trust-secret
+
+auth:
+  jwt:
+    secret: ${AUTH_JWT_SECRET}
+  gateway:
+    trust-secret: ${AUTH_GATEWAY_SECRET}
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+
+# 生产关闭接口文档，收敛暴露面
+springdoc:
+  api-docs:
+    enabled: false
+knife4j:
+  enable: false
+
+management:
+  server:
+    # 留空 = 与应用同端口；设成独立端口（如 MANAGEMENT_PORT=9080）可让 /actuator 不随应用端口对外暴露，
+    # 采集端在内网按该端口抓取。compose 的健康检查读同一个变量，两者始终一致。
+    port: ${MANAGEMENT_PORT:}
+  endpoints:
+    web:
+      exposure:
+        # 生产不暴露 info；prometheus 保留供内网采集
+        include: health,prometheus
+  tracing:
+    sampling:
+      # 生产默认降采样，避免全量链路数据压垮存储
+      probability: ${TRACING_SAMPLING_PROBABILITY:0.1}
+
+logging:
+  level:
+    com.scaffold: INFO

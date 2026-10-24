@@ -1,21 +1,43 @@
+# 通用配置：路由表、限流键取法等与环境无关的部分。
+# 环境差异（Redis、Nacos、密钥等）下沉到 application-{dev,test,prod}.yml，
+# 缺省 profile 为 dev，生产部署显式设置 SPRING_PROFILES_ACTIVE=prod。
 server:
   port: 8080
+
+scaffold:
+  client-ip:
+    # 登录限流的限流键取法：默认只信任最后一跳追加的地址，
+    # 客户端伪造的 X-Forwarded-For 段不采信；链路前面还有额外代理时调大该值。
+    trusted-proxy-count: ${TRUSTED_PROXY_COUNT:1}
 
 spring:
   application:
     name: gateway-service
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
   cloud:
-    nacos:
-      discovery:
-        server-addr: ${NACOS_ADDR:127.0.0.1:8848}
-        namespace: ${NACOS_NAMESPACE:public}
     gateway:
       # 按服务发现自动生成路由，并自定义 /api/** 路径到 user-service
       routes:
+        # 登录限流：令牌桶基于 Redis，仅对该路径生效；order 更小优先匹配，
+        # 避免被下面的 user-service 通配路由截走
+        - id: auth-login-rate-limit
+          uri: lb://user-service
+          order: -1
+          predicates:
+            - Path=/api/auth/login
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: ${LOGIN_RATE_REPLENISH:5}
+                redis-rate-limiter.burstCapacity: ${LOGIN_RATE_BURST:10}
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@loginRateLimitKeyResolver}"
+            - PreserveHostHeader
         - id: user-service
           uri: lb://user-service
           predicates:
-            - Path=/api/user/**,/api/auth/**,/api/device/**,/api/role/**,/api/permission/**,/api/permission-group/**
+            - Path=/api/user/**,/api/auth/**,/api/device/**,/api/role/**,/api/permission/**,/api/permission-group/**,/api/operation-log/**,/api/login-log/**,/api/dict-type/**,/api/dict-item/**
           filters:
             # 保留 /api 前缀透传下游，便于下游统一鉴权与 OpenAPI
             - PreserveHostHeader
@@ -32,15 +54,35 @@ spring:
           lower-case-service-id: true
 
 # 鉴权：默认 JWT，切换 SA_TOKEN 改此处即可（需在 user-service 同步）
+# 密钥（auth.jwt.secret / auth.gateway.trust-secret）按环境在 profile 中配置。
 auth:
   type: ${AUTH_TYPE:JWT}
   token-header: Authorization
   token-prefix: "Bearer "
   jwt:
-    secret: ${AUTH_JWT_SECRET:fullstack-scaffold-default-secret-please-change-it-32bytes}
     expire-minutes: 120
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # prometheus 供采集端抓取；生产档会另行限定暴露位置（见 application-prod.yml）
+        include: health,info,prometheus
+  metrics:
+    tags:
+      # 同一套看板接入多个服务时，用它区分指标来源
+      application: ${spring.application.name}
+  tracing:
+    sampling:
+      # 采样率：1.0 为全采样，生产按流量与存储成本下调
+      probability: ${TRACING_SAMPLING_PROBABILITY:1.0}
 
 logging:
   level:
     com.scaffold: INFO
     org.springframework.cloud.gateway: INFO
+  pattern:
+    # 日志行带上 traceId/spanId。网关是链路起点，它生成的 traceId 随转发带给下游，
+    # 下游日志里的 traceId 与本次网关请求一致，两侧可拼成一条链路。
+    # 网关自身（WebFlux）的日志行取不到 traceId：brave 的作用域基于线程本地，不跨 Reactor 边界。
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"

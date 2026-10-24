@@ -31,7 +31,9 @@ public class DeviceServiceImpl implements DeviceService {
                     .or().like(UserDevice::getFingerprint, keyword)
                     .or().like(UserDevice::getIp, keyword));
         }
-        wrapper.orderByDesc(UserDevice::getLastLoginTime);
+        // 主排序为最近登录时间；sort_seq 作为严格递增的次级排序键，
+        // 保证 last_login_time 相同（同一毫秒批量登记）时顺序依然确定
+        wrapper.orderByDesc(UserDevice::getLastLoginTime).orderByDesc(UserDevice::getSortSeq);
         IPage<UserDevice> result = deviceMapper.selectPage(page, wrapper);
         return new PageResult<>(result.getTotal(), result.getCurrent(), result.getSize(), result.getRecords());
     }

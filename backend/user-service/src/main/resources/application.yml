@@ -1,24 +1,27 @@
+# 通用配置：与环境无关的部分。
+# 环境差异（数据源、Redis、Nacos、密钥、SQL 日志等）一律下沉到 application-{dev,test,prod}.yml。
+# 缺省 profile 为 dev，保证 compose / 本地直接启动无需额外变量；
+# 生产部署显式设置 SPRING_PROFILES_ACTIVE=prod。
 server:
   port: 8001
 
 spring:
   application:
     name: user-service
-  datasource:
-    url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/fs_user?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-    username: ${MYSQL_USER:root}
-    password: ${MYSQL_PASSWORD:root123}
-    driver-class-name: com.mysql.cj.jdbc.Driver
-  data:
-    redis:
-      host: ${REDIS_HOST:127.0.0.1}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
-  cloud:
-    nacos:
-      discovery:
-        server-addr: ${NACOS_ADDR:127.0.0.1:8848}
-        namespace: ${NACOS_NAMESPACE:public}
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  flyway:
+    # 表结构版本管理：脚本位于 classpath:db/migration，V1 为历史 init.sql 基线
+    enabled: ${FLYWAY_ENABLED:true}
+    locations: classpath:db/migration
+    encoding: UTF-8
+    # 存量库首次接入：先在 baseline-version(0) 打基线，再补跑 V1。
+    # V1 全部 CREATE TABLE IF NOT EXISTS，对已由旧 init.sql 建表的库幂等无副作用；
+    # 全新库则由 V1 直接建全部表。后续表演出走 V2+，不得修改已发布脚本。
+    baseline-on-migrate: true
+    baseline-version: 0
+    validate-on-migrate: true
+    table: flyway_schema_history
 
 # MyBatis-Plus
 mybatis-plus:
@@ -26,29 +29,80 @@ mybatis-plus:
   type-enums-package: com.scaffold.user.enums
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
     # 统一枚举处理器：按 @EnumValue 完成 枚举 ↔ DB 值 转换
     default-enum-type-handler: com.baomidou.mybatisplus.core.handlers.MybatisEnumTypeHandler
   global-config:
     db-config:
-      id-type: auto
+      # 主键统一由 SnowflakeIdentifierGenerator 分配，数据库不使用 AUTO_INCREMENT
+      id-type: assign_id
       logic-delete-field: deleted
       logic-delete-value: 1
       logic-not-delete-value: 0
 
+# 全局 Snowflake 发号器（id-starter）
+scaffold:
+  id:
+    enabled: true
+    # 固定纪元 2026-01-01T00:00:00Z，41 位时间戳可用约 69 年
+    epoch-millis: 1767225600000
+    worker-id-bits: 10
+    sequence-bits: 12
+    # FIXED：使用下面配置的固定 workerId，不做集群协调，部署时须保证节点间不冲突
+    # LEASE：改用数据库租约自动分配（依赖 sys_worker_node 表与 scaffold.id.node-key）
+    worker-id-mode: ${SNOWFLAKE_WORKER_ID_MODE:FIXED}
+    worker-id: ${SNOWFLAKE_WORKER_ID:0}
+    node-key: ${SNOWFLAKE_NODE_KEY:}
+    # 回拨处理策略：WAIT_THEN_THROW（默认，容忍窗口内等待追平，超时抛异常）
+    #                WAIT_FOREVER（不限时等待，不抛异常，时钟永久回拨会挂死发号线程）
+    #                THROW（立即抛异常，不等待）
+    clock-rollback-strategy: ${SNOWFLAKE_ROLLBACK_STRATEGY:WAIT_THEN_THROW}
+    clock-rollback-tolerance-ms: 1000
+    max-sequence-wait-ms: 1000
+    # 水位持久化：节点重启后仍能检测时钟回拨（依赖 sys_id_watermark 表）
+    persist-timestamp-watermark: ${SNOWFLAKE_PERSIST_WATERMARK:true}
+    watermark-snapshot-interval-ms: 5000
+    lease-ttl-ms: 30000
+    lease-renew-interval-ms: 10000
+  client-ip:
+    # 可信代理跳数：默认只信任最后一跳追加的地址，客户端伪造的 X-Forwarded-For 段不采信。
+    # 链路前面还有额外代理（如 nginx → gateway）时调大该值，取到更靠前的真实客户端地址。
+    trusted-proxy-count: ${TRUSTED_PROXY_COUNT:1}
+
+# 登录失败锁定（Redis 计数）：同一账号窗口内连续失败达上限即锁定，登录成功清零
+login-lockout:
+  enabled: ${LOGIN_LOCKOUT_ENABLED:true}
+  max-failures: ${LOGIN_LOCKOUT_MAX_FAILURES:5}
+  window-minutes: ${LOGIN_LOCKOUT_WINDOW_MINUTES:15}
+  lock-minutes: ${LOGIN_LOCKOUT_LOCK_MINUTES:15}
+
+# 测试数据重建程序（TestDataRebuildRunner）
+test-data:
+  # 动作：inspect / rebuild / verify，留空表示不执行（普通启动不触发任何重建）
+  action: ${TEST_DATA_ACTION:}
+  # 显式授权标记：rebuild 必须同时满足该标记为 true，防止误删数据
+  confirm: ${TEST_DATA_CONFIRM:}
+  # 允许执行重建的环境标识白名单
+  allowed-databases: ${TEST_DATA_ALLOWED_DATABASES:fs_user,fs_user_test}
+  # 生成的用户数量（不含 admin / guest 两个固定账号）
+  user-count: ${TEST_DATA_USER_COUNT:20}
+
 # 鉴权：一行切换 JWT | SA_TOKEN
 # 切换到 SA_TOKEN 时，UserServiceImpl 与 LoginController 无需改动，
 # SecurityAutoConfiguration 已在 Application 类排除，SaInterceptor 接管鉴权。
+# 密钥（auth.jwt.secret / auth.gateway.trust-secret）按环境在 profile 中配置。
 auth:
   type: ${AUTH_TYPE:JWT}
   token-header: Authorization
   token-prefix: "Bearer "
   jwt:
-    secret: ${AUTH_JWT_SECRET:fullstack-scaffold-default-secret-please-change-it-32bytes}
     expire-minutes: 120
   sa-token:
     token-name: Authorization
     timeout: 7200
+  gateway:
+    # 强制请求来自可信网关：直连 8001 且无正确 X-Gateway-Secret 的请求返回 403
+    # 本地源码直连调试可用 AUTH_GATEWAY_ENFORCE_TRUST=false 临时关闭
+    enforce-trust: ${AUTH_GATEWAY_ENFORCE_TRUST:true}
 
 # Sa-Token 自身配置（仅 auth.type=SA_TOKEN 生效）
 sa-token:
@@ -88,8 +142,20 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        # prometheus 供采集端抓取；生产档会另行限定暴露位置（见 application-prod.yml）
+        include: health,info,prometheus
+  metrics:
+    tags:
+      # 同一套看板接入多个服务时，用它区分指标来源
+      application: ${spring.application.name}
+  tracing:
+    sampling:
+      # 采样率：1.0 为全采样，生产按流量与存储成本下调
+      probability: ${TRACING_SAMPLING_PROBABILITY:1.0}
 
 logging:
   level:
     com.scaffold: INFO
+  pattern:
+    # 每行日志固定带上 traceId/spanId：同一次请求在网关与下游服务中可用同一 traceId 串起来
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"

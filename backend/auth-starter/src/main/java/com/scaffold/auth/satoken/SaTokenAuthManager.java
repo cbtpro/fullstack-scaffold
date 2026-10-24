@@ -56,7 +56,9 @@ public class SaTokenAuthManager implements AuthManager {
         if (user == null) {
             throw new BizException(ResultCode.UNAUTHORIZED, "用户不存在");
         }
-        if (user.getPassword() == null || !encoder.matches(req.getPassword(), user.getPassword())) {
+        // 与 JWT 实现同口径：缺凭据按登录失败处理，不能落到 BCrypt 的 null 入参检查上
+        if (req.getPassword() == null || user.getPassword() == null
+                || !encoder.matches(req.getPassword(), user.getPassword())) {
             throw new BizException(ResultCode.UNAUTHORIZED, "密码错误");
         }
         // 签发前扩展点：与 JWT 实现同口径，设备登记/风控校验由实现方完成

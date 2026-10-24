@@ -13,12 +13,9 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -26,6 +23,9 @@ import java.util.List;
 
 /**
  * 权限/角色校验切面。仅在 servlet web 应用激活（user-service），gateway 是 WebFlux 不触发。
+ *
+ * <p>本 Bean 由 {@link PermissionAspectConfiguration} 显式装配（starter 包不在业务应用的
+ * 组件扫描范围内，不能依赖 {@code @Component}）。
  *
  * <p>策略：
  * <ol>
@@ -39,9 +39,6 @@ import java.util.List;
  */
 @Slf4j
 @Aspect
-@Component
-@ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
-@ConditionalOnClass(Aspect.class)
 @RequiredArgsConstructor
 public class PermissionAspect {
 

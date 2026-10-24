@@ -1,5 +1,7 @@
 package com.scaffold.auth;
 
+import com.scaffold.auth.aspect.PermissionAspectConfiguration;
+import com.scaffold.auth.gateway.GatewayTrustConfig;
 import com.scaffold.auth.jwt.JwtAuthManager;
 import com.scaffold.auth.jwt.JwtSecurityConfig;
 import com.scaffold.auth.satoken.SaTokenAuthManager;
@@ -12,6 +14,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.env.Environment;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -30,8 +33,17 @@ import org.springframework.security.crypto.password.PasswordEncoder;
  */
 @AutoConfiguration
 @EnableConfigurationProperties(AuthProperties.class)
-@Import(JwtSecurityConfig.class)
+@Import({JwtSecurityConfig.class, GatewayTrustConfig.class, PermissionAspectConfiguration.class})
 public class AuthAutoConfiguration {
+
+    /**
+     * JWT 密钥启动校验：非开发环境使用默认/弱密钥时 fail-fast。
+     * 声明为 static，确保在配置类实例化前即可完成属性与环境检查。
+     */
+    @Bean
+    public static JwtSecretValidator jwtSecretValidator(AuthProperties props, Environment environment) {
+        return new JwtSecretValidator(props, environment);
+    }
 
     /**
      * BCrypt 密码编码器，业务方未自定义时提供默认实现。

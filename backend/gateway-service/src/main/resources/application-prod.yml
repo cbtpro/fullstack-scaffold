@@ -1,0 +1,42 @@
+# 生产环境：外部依赖与密钥必须由环境变量显式提供，缺失即启动失败（fail-fast）。
+spring:
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR}
+        namespace: ${NACOS_NAMESPACE:public}
+
+auth:
+  jwt:
+    secret: ${AUTH_JWT_SECRET}
+  gateway:
+    trust-secret: ${AUTH_GATEWAY_SECRET}
+
+management:
+  server:
+    # 留空 = 与应用同端口；设成独立端口（如 MANAGEMENT_PORT=9080）可让 /actuator 不随对外端口暴露，
+    # 采集端在内网按该端口抓取。
+    port: ${MANAGEMENT_PORT:}
+  endpoints:
+    web:
+      exposure:
+        # 生产不暴露 info；prometheus 保留供内网采集
+        include: health,prometheus
+  tracing:
+    sampling:
+      # 生产默认降采样，避免全量链路数据压垮存储
+      probability: ${TRACING_SAMPLING_PROBABILITY:0.1}
+
+scaffold:
+  # 必须由外部注入的配置项：缺失或未解析时启动即失败（见 RequiredPropertiesEnvironmentPostProcessor）
+  required-properties:
+    - spring.data.redis.host
+    - spring.cloud.nacos.discovery.server-addr
+    - auth.jwt.secret
+    - auth.gateway.trust-secret
+

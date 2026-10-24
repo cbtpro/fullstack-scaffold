@@ -1,0 +1,49 @@
+# 测试环境：供集成测试与 CI 使用（@ActiveProfiles("test")）。
+# 测试期特有的开关在此一次性收敛，用例只声明 profile、不必逐条覆写属性。
+spring:
+  datasource:
+    # 与 ItDatabase 使用同一组系统属性名与默认值，-Dit.db.url=... 即可切换实例
+    url: ${it.db.url:jdbc:mysql://127.0.0.1:13306/fs_user?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+    username: ${it.db.user:root}
+    password: ${it.db.password:root123}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  cloud:
+    nacos:
+      discovery:
+        # 测试不依赖注册中心，省掉一个外部基础设施
+        enabled: false
+        register-enabled: false
+
+auth:
+  jwt:
+    secret: ${AUTH_JWT_SECRET:fullstack-scaffold-test-secret-please-change-it-32bytes}
+  gateway:
+    # 测试直连 8001，不做网关信任校验
+    enforce-trust: false
+    trust-secret: ${AUTH_GATEWAY_SECRET:fullstack-scaffold-test-gateway-secret}
+
+captcha:
+  # 测试不依赖 Redis
+  cache-mode: memory
+
+login-lockout:
+  # 测试会反复触发失败登录，锁定会互相干扰
+  enabled: false
+
+mybatis-plus:
+  configuration:
+    # 不在 surefire 输出里淹没 SQL
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+
+knife4j:
+  enable: false
+
+management:
+  health:
+    # 测试不依赖 Redis，健康检查不应因为本机没有 Redis 而判 DOWN
+    redis:
+      enabled: false
+
+logging:
+  level:
+    com.scaffold: INFO
