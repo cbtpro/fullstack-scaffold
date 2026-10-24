@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+# 供 manage_test.sh 使用的假 docker：记录每次调用，并按场景返回固定结果。
+# 只实现 manage.sh 用到的那部分命令，不产生任何真实副作用。
+set -uo pipefail
+
+printf '%s\n' "$*" >> "${FAKE_LOG:?FAKE_LOG 未设置}"
+
+exists_volume() {
+    local name="$1"
+    case " ${FAKE_LEGACY_VOLUMES:-} " in
+        *" $name "*) return 0 ;;
+    esac
+    return 1
+}
+
+case "$1" in
+    info)
+        exit 0
+        ;;
+    context)
+        case "${2:-}" in
+            show) echo "default" ;;
+            inspect) echo "${FAKE_CONTEXT_HOST:-unix:///var/run/docker.sock}" ;;
+        esac
+        exit 0
+        ;;
+    compose)
+        # 环境变量不是命令行的一部分，单独记一行，让测试能断言数据根确实传给了 compose
+        printf 'env FS_DATA_PATH=%s\n' "${FS_DATA_PATH:-}" >> "${FAKE_LOG:?FAKE_LOG 未设置}"
+        shift
+        while [ $# -gt 0 ]; do
+            case "$1" in
+                -p|-f|--env-file) shift 2 ;;
+                *) break ;;
+            esac
+        done
+        case "${1:-}" in
+            version)
+                echo "Docker Compose version v2.0.0"
+                ;;
+            config)
+                if [ "${2:-}" != "--quiet" ]; then
+                    cat <<'YAML'
+name: probe
+services:
+  gateway-service:
+    image: probe/gateway-service:test
+  user-service:
+    image: probe/user-service:test
+  web-react:
+    image: probe/web-react:test
+  web-vue:
+    image: probe/web-vue:test
+YAML
+                fi
+                ;;
+        esac
+        exit 0
+        ;;
+    volume)
+        shift
+        subcommand="${1:-}"
+        shift || true
+        [ "$subcommand" = "inspect" ] || exit 0
+        if [ "${1:-}" = "--format" ]; then
+            shift 2
+        fi
+        name="${1:-}"
+        if [ -n "${FAKE_INSPECT_ERROR:-}" ]; then
+            echo "$FAKE_INSPECT_ERROR" >&2
+            exit 1
+        fi
+        if ! exists_volume "$name"; then
+            echo "Error response from daemon: get ${name}: no such volume" >&2
+            exit 1
+        fi
+        case "$name" in
+            fullstack-scaffold_fs-mysql-data) directory=mysql ;;
+            fullstack-scaffold_fs-redis-data) directory=redis ;;
+            fullstack-scaffold_fs-nacos-data) directory=nacos-data ;;
+            fullstack-scaffold_fs-nacos-logs) directory=nacos-logs ;;
+            *) directory="" ;;
+        esac
+        echo "local|map[device:${FAKE_DATA_DIR}/${directory} o:bind type:none]"
+        exit 0
+        ;;
+    build)
+        if [ -n "${FAKE_CONTEXT_LISTING:-}" ]; then
+            context="${!#}"
+            (cd "$context" && find . -maxdepth 3 \
+                \( -name node_modules -o -name dist -o -name '._*' -o -name 'package.json' \) \
+                | sort) > "$FAKE_CONTEXT_LISTING"
+        fi
+        exit 0
+        ;;
+    image)
+        [ "${2:-}" = "ls" ] && [ -n "${FAKE_IMAGE_ID:-}" ] && echo "$FAKE_IMAGE_ID"
+        exit 0
+        ;;
+    *)
+        exit 0
+        ;;
+esac

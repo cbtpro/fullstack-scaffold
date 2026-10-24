@@ -1,0 +1,38 @@
+# 集成测试专用中间件：只起一个 MySQL，不依赖 Nacos / Redis / 网关。
+#
+# 用法：
+#   docker compose -f docker/docker-compose.test.yml up -d --wait
+#   cd backend && mvn -o test -Dit.db.url=jdbc:mysql://127.0.0.1:13307/fs_user
+#
+# 为什么单独一个文件而不是复用 docker-compose.yml：
+#   主档里 user-service / gateway-service 要连 Nacos 才能启动，
+#   而集成测试只需要数据库；端口也刻意错开（13307 vs 13306），
+#   避免与开发用的实例互相干扰。
+#
+# 端口可用环境变量覆盖：MYSQL_TEST_PORT=23306 docker compose -f ... up -d
+
+name: fullstack-scaffold-test
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: fs-mysql-test
+    ports:
+      - "${MYSQL_TEST_PORT:-13307}:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: fs_user
+      TZ: Asia/Shanghai
+    volumes:
+      - ./mysql/init:/docker-entrypoint-initdb.d:ro
+      - fs-mysql-test-data:/var/lib/mysql
+    # 独立于开发实例的卷，测试数据可随时整体丢弃重建
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-uroot", "-proot123"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 20s
+
+volumes:
+  fs-mysql-test-data:

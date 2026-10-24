@@ -95,16 +95,20 @@ fullstack-scaffold/
 | API 文档 | /doc.html | knife4j UI，经网关路由到 user-service |
 | backend-mock | 5180 | Nitro mock，纯前端联调用 |
 | Nacos | 8848 + 9848 + 9849 | 8848 控制台，9848/9849 gRPC |
-| MySQL | 3306 | 库 `fs_user` |
+| MySQL | 13306（全栈档，仅本机） | 库 `fs_user` |
 | Redis | 6379 | — |
 
 ## 快速开始
 
-### 路线 A：全栈一键（Docker）
+### 路线 A：服务器全栈部署（Maven 管理 Docker）
 
 ```bash
-docker compose -f docker/docker-compose.yml up -d --build
+# 新环境直接部署；旧 Compose 数据卷先执行 migrate（保留原卷）
+mvn -N -f backend/pom.xml -Pdocker validate -Ddocker.action=migrate
+mvn -N -f backend/pom.xml -Pdocker validate -Ddocker.action=deploy
 ```
+
+数据持久化到 `/Users/pe7er/Developer/docker/fullstack-scaffold-data`，Linux 服务器使用 `-Ddocker.data.dir=/srv/fullstack-scaffold-data` 覆盖。父 POM 管理全栈，子 POM 管理自身；支持 build/create/up/stop/restart/delete/status，delete 保留数据。完整命令及迁移说明见 [Docker 部署文档](docs/DOCKER.md)。
 
 启动后：
 - gateway：http://localhost:8080
@@ -208,7 +212,7 @@ A: Gateway 是 WebFlux，`gateway-service/pom.xml` 已显式排除 `spring-boot-
 A: `frontend/.npmrc` 的 `public-hoist-pattern[]=*react*` / `*vue*` / `*antd*` 必须保留，否则 pnpm 严格 hoist 下 antd 找不到 React。
 
 **Q: Docker 构建慢 / 报 xattr 失败？**
-A: 首次构建需下载 maven 依赖，耗时较长。`docker/maven-settings.xml` 已配阿里云镜像加速。macOS 外置卷（非 APFS）可能因 `._*` AppleDouble 文件触发 buildx xattr 失败，改用旧 builder 即可：`DOCKER_BUILDKIT=0 docker compose -f docker/docker-compose.yml build`。
+A: 首次构建需下载 Maven / pnpm 依赖。通过 Maven docker profile 构建会自动准备不含 AppleDouble 与宿主依赖的临时源码上下文，规避外置卷 xattr 错误；后端使用 BuildKit 缓存 Maven 依赖，网络错误有限重试。不要关闭 BuildKit，完整用法见 [Docker 部署文档](docs/DOCKER.md)。
 
 **Q: 前端 `pnpm build` 报 Top-level await is not available？**
 A: Vite 默认构建目标（es2020）不支持顶层 await。`main.tsx` / `main.ts` 已用 `async function bootstrap()` 包裹，构建兼容 Chrome 87 / Firefox 78 / Safari 14。若在入口文件新增 `await`，同样需包裹在 async 函数中。

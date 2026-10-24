@@ -6,7 +6,9 @@
 **/*.jar
 !backend/*/pom.xml
 
-frontend/node_modules/
+**/node_modules/
+**/dist/
+**/__pycache__/
 frontend/.nitro/
 frontend/.output/
 frontend/dist/
@@ -22,3 +24,6 @@ backend/*/.flattened-pom.xml
 **/.DS_Store
 **/._*
 *.log
+# 环境文件含本机路径与密钥，不进构建上下文
+**/.env
+**/.env.*

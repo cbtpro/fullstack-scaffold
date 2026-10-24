@@ -1,5 +1,9 @@
 # fullstack-scaffold 全栈部署档：中间件 + gateway-service + user-service + web-react + web-vue
-# 用法：docker compose -f docker/docker-compose.yml up -d --build
+# 服务器部署；推荐通过 backend/pom.xml 的 docker profile 管理，见 docs/DOCKER.md。
+#
+# 数据目录：原为 external 命名卷（落在 Docker Desktop 虚拟盘，占内置盘空间）。
+# 现改为绑定挂载外置盘，可用 FS_DATA_PATH 覆盖：
+#   FS_DATA_PATH=/Volumes/WD_BLACK/docker/docker_files docker compose up -d
 
 name: fullstack-scaffold
 
@@ -9,8 +13,7 @@ services:
     container_name: fs-mysql
     restart: unless-stopped
     ports:
-      # 宿主端口可覆盖：本机 3306 被占用时 MYSQL_PORT=13306 docker compose up -d
-      - "${MYSQL_PORT:-3306}:3306"
+      - "${ADMIN_BIND_IP:-127.0.0.1}:${MYSQL_PORT:-13306}:3306"
     environment:
       MYSQL_ROOT_PASSWORD: root123
       MYSQL_DATABASE: fs_user
@@ -18,9 +21,9 @@ services:
     volumes:
       - ./mysql/conf/my.cnf:/etc/mysql/conf.d/my.cnf:ro
       - ./mysql/init:/docker-entrypoint-initdb.d:ro
-      - fs-mysql-data:/var/lib/mysql
+      - ${FS_DATA_PATH:-/Volumes/WD_BLACK/docker/docker_files}/fs_mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-uroot", "-proot123"]
+      test: ["CMD", "mysql", "-h127.0.0.1", "-uroot", "-proot123", "-e", "SELECT 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -32,10 +35,10 @@ services:
     container_name: fs-redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "${ADMIN_BIND_IP:-127.0.0.1}:${REDIS_PORT:-6379}:6379"
     volumes:
       - ./redis/redis.conf:/etc/redis/redis.conf:ro
-      - fs-redis-data:/data
+      - ${FS_DATA_PATH:-/Volumes/WD_BLACK/docker/docker_files}/fs_redis_data:/data
     command: ["redis-server", "/etc/redis/redis.conf"]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -52,9 +55,9 @@ services:
     restart: unless-stopped
     ports:
       # 三个宿主端口均可覆盖：本机被占用时 NACOS_HTTP_PORT=18848 docker compose up -d
-      - "${NACOS_HTTP_PORT:-8848}:8848"
-      - "${NACOS_GRPC_PORT:-9848}:9848"
-      - "${NACOS_GRPC_SERVER_PORT:-9849}:9849"
+      - "${ADMIN_BIND_IP:-127.0.0.1}:${NACOS_HTTP_PORT:-8848}:8848"
+      - "${ADMIN_BIND_IP:-127.0.0.1}:${NACOS_GRPC_PORT:-9848}:9848"
+      - "${ADMIN_BIND_IP:-127.0.0.1}:${NACOS_GRPC_SERVER_PORT:-9849}:9849"
     environment:
       MODE: standalone
       PREFER_HOST_MODE: hostname
@@ -65,8 +68,8 @@ services:
       TZ: Asia/Shanghai
     volumes:
       - ./nacos/conf/application.properties:/home/nacos/conf/application.properties:ro
-      - fs-nacos-data:/home/nacos/data
-      - fs-nacos-logs:/home/nacos/logs
+      - ${FS_DATA_PATH:-/Volumes/WD_BLACK/docker/docker_files}/fs_nacos_data:/home/nacos/data
+      - ${FS_DATA_PATH:-/Volumes/WD_BLACK/docker/docker_files}/fs_nacos_logs:/home/nacos/logs
     healthcheck:
       test: ["CMD-SHELL", "curl -fs http://localhost:8848/nacos/v1/console/health/readiness || exit 1"]
       interval: 15s
@@ -77,15 +80,20 @@ services:
       - fs-net
 
   user-service:
+    image: fullstack-scaffold-user-service:${IMAGE_TAG:-latest}
     build:
       # build context 为仓库根，Dockerfile 内 COPY backend/* 才能拿到父 pom 与 common/auth-starter
       context: ..
       dockerfile: docker/user-service/Dockerfile
     container_name: fs-user-service
     restart: unless-stopped
-    ports:
-      - "${USER_SERVICE_PORT:-8001}:8001"
+    # 不映射宿主端口：外部统一经 gateway(8080) 访问，避免绕过网关直连 8001。
+    # 容器间经 fs-net 服务名访问；expose 仅作文档化声明。
+    expose:
+      - "8001"
     environment:
+      # 环境档：dev / test / prod，见 backend/user-service/src/main/resources/application-*.yml
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
       MYSQL_HOST: fs-mysql
       MYSQL_PORT: "3306"
       MYSQL_USER: root
@@ -97,6 +105,9 @@ services:
       NACOS_NAMESPACE: public
       AUTH_TYPE: ${AUTH_TYPE:-JWT}
       AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:-fullstack-scaffold-default-secret-please-change-it-32bytes}
+      AUTH_GATEWAY_SECRET: ${AUTH_GATEWAY_SECRET:-fullstack-scaffold-dev-gateway-secret}
+      # 留空 = actuator 与应用同端口；设独立端口（配合 prod 档）时健康检查同步跟随
+      MANAGEMENT_PORT: ${MANAGEMENT_PORT:-}
       TZ: Asia/Shanghai
     depends_on:
       mysql:
@@ -106,7 +117,7 @@ services:
       nacos:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -fs http://localhost:8001/actuator/health || exit 1"]
+      test: ["CMD-SHELL", "curl -fs http://localhost:${MANAGEMENT_PORT:-8001}/actuator/health || exit 1"]
       interval: 15s
       timeout: 10s
       retries: 10
@@ -115,6 +126,7 @@ services:
       - fs-net
 
   gateway-service:
+    image: fullstack-scaffold-gateway-service:${IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: docker/gateway-service/Dockerfile
@@ -123,20 +135,38 @@ services:
     ports:
       - "${GATEWAY_PORT:-8080}:8080"
     environment:
+      # 环境档：dev / test / prod，见 backend/gateway-service/src/main/resources/application-*.yml
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
       NACOS_ADDR: fs-nacos:8848
       NACOS_NAMESPACE: public
       AUTH_TYPE: ${AUTH_TYPE:-JWT}
       AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:-fullstack-scaffold-default-secret-please-change-it-32bytes}
+      AUTH_GATEWAY_SECRET: ${AUTH_GATEWAY_SECRET:-fullstack-scaffold-dev-gateway-secret}
+      # 登录限流令牌桶落 Redis，多网关实例共享配额
+      REDIS_HOST: fs-redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: ""
+      # 留空 = actuator 与应用同端口；设独立端口（配合 prod 档）可让 /actuator 不随对外端口暴露
+      MANAGEMENT_PORT: ${MANAGEMENT_PORT:-}
       TZ: Asia/Shanghai
     depends_on:
       nacos:
         condition: service_healthy
+      redis:
+        condition: service_healthy
       user-service:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-s", "-o", "/dev/null", "http://127.0.0.1:8080/"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 20s
     networks:
       - fs-net
 
   web-react:
+    image: fullstack-scaffold-web-react:${IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: docker/web-react/Dockerfile
@@ -146,11 +176,18 @@ services:
       - "${WEB_REACT_PORT:-5173}:80"
     depends_on:
       gateway-service:
-        condition: service_started
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 5s
     networks:
       - fs-net
 
   web-vue:
+    image: fullstack-scaffold-web-vue:${IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: docker/web-vue/Dockerfile
@@ -160,15 +197,15 @@ services:
       - "${WEB_VUE_PORT:-5174}:80"
     depends_on:
       gateway-service:
-        condition: service_started
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 5s
     networks:
       - fs-net
-
-volumes:
-  fs-mysql-data:
-  fs-redis-data:
-  fs-nacos-data:
-  fs-nacos-logs:
 
 networks:
   fs-net:

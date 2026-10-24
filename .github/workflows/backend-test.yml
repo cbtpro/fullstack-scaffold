@@ -1,0 +1,62 @@
+name: backend-test
+
+# 后端构建与测试。集成测试需要 MySQL，由 GitHub Actions 的 service container 提供，
+# 与本地 docker/docker-compose.test.yml 用的是同一份 docker/mysql/init/init.sql。
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'docker/mysql/**'
+      - '.github/workflows/backend-test.yml'
+  pull_request:
+    paths:
+      - 'backend/**'
+      - 'docker/mysql/**'
+      - '.github/workflows/backend-test.yml'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root123
+          MYSQL_DATABASE: fs_user
+          TZ: Asia/Shanghai
+        ports:
+          - 13306:3306
+        # 与本地一致的初始化脚本，保证 CI 与本地表结构同源
+        volumes:
+          - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+        options: >-
+          --health-cmd="mysqladmin ping -uroot -proot123"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build and test
+        working-directory: ./backend
+        run: mvn -B -ntp verify -Dit.db.url=jdbc:mysql://127.0.0.1:13306/fs_user
+
+      - name: Upload surefire reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: backend/*/target/surefire-reports/
+          if-no-files-found: ignore
